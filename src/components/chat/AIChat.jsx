@@ -1,8 +1,8 @@
 import React, { useState, useRef, useEffect } from 'react';
 import { useCareer } from '../../context/CareerContext';
 import { useProfile } from '../../context/ProfileContext';
+import { apiService } from '../../services/api';
 import {
-  MessageSquareCode,
   Send,
   Sparkles,
   Bot,
@@ -15,8 +15,7 @@ import {
   Target,
   Code,
   TrendingUp,
-  Info,
-  Clock
+  BrainCircuit
 } from 'lucide-react';
 
 export default function AIChat() {
@@ -26,18 +25,17 @@ export default function AIChat() {
   const roleTitle = currentRole?.title || 'Software Engineering';
   const firstName = profile?.fullName?.trim() ? profile.fullName.trim().split(' ')[0] : 'Student';
 
-  const placeholderMessage = 'AI Career Assistant will be available after backend integration.';
-
   const [messages, setMessages] = useState([
     {
       id: 1,
       sender: 'ai',
-      text: placeholderMessage,
+      text: `Hello ${firstName}! I am your personal CareerPilot AI assistant, powered by Gemini 2.5 Flash. Ask me anything about your roadmap for ${roleTitle}, skill gaps, resume review, or interview preparation!`,
       timestamp: 'Just now'
     }
   ]);
 
   const [inputText, setInputText] = useState('');
+  const [loading, setLoading] = useState(false);
   const [copiedId, setCopiedId] = useState(null);
 
   const messagesEndRef = useRef(null);
@@ -48,7 +46,7 @@ export default function AIChat() {
 
   useEffect(() => {
     scrollToBottom();
-  }, [messages]);
+  }, [messages, loading]);
 
   const suggestionPrompts = [
     {
@@ -78,26 +76,48 @@ export default function AIChat() {
     }
   ];
 
-  const handleSend = (textToSend) => {
+  const handleSend = async (textToSend) => {
     const query = textToSend || inputText;
-    if (!query.trim()) return;
+    if (!query.trim() || loading) return;
 
+    const userMsgId = Date.now();
     const userMessage = {
-      id: Date.now(),
+      id: userMsgId,
       sender: 'user',
       text: query,
       timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     };
 
-    const aiReplyMessage = {
-      id: Date.now() + 1,
-      sender: 'ai',
-      text: placeholderMessage,
-      timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-    };
-
-    setMessages((prev) => [...prev, userMessage, aiReplyMessage]);
+    setMessages((prev) => [...prev, userMessage]);
     setInputText('');
+    setLoading(true);
+
+    try {
+      const response = await apiService.sendAIChat(query);
+      const aiReply = response.reply || "I'm here to help with your career pathway!";
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: 'ai',
+          text: aiReply,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    } catch (err) {
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: Date.now() + 1,
+          sender: 'ai',
+          text: `⚠️ Error: ${err.message || 'Could not connect to Gemini AI service. Make sure backend is running with valid GOOGLE_API_KEY.'}`,
+          timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+        }
+      ]);
+    } finally {
+      setLoading(false);
+    }
   };
 
   const copyMessage = (id, text) => {
@@ -111,7 +131,7 @@ export default function AIChat() {
       {
         id: Date.now(),
         sender: 'ai',
-        text: placeholderMessage,
+        text: `Hello ${firstName}! How can I help you advance your career in ${roleTitle} today?`,
         timestamp: 'Just now'
       }
     ]);
@@ -127,16 +147,16 @@ export default function AIChat() {
           </div>
           <div>
             <div className="flex items-center gap-2 flex-wrap">
-              <h1 className="text-base font-bold text-slate-900 dark:text-white">
+              <h1 className="text-base font-bold text-slate-900 dark:text-white flex items-center gap-2">
                 CareerPilot AI Assistant
+                <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 flex items-center gap-1">
+                  <BrainCircuit className="w-3 h-3" />
+                  <span>Gemini 2.5 Flash</span>
+                </span>
               </h1>
-              <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-amber-500/10 text-amber-600 dark:text-amber-400 border border-amber-500/20 flex items-center gap-1">
-                <Clock className="w-3 h-3" />
-                <span>Frontend Preview</span>
-              </span>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Career guidance workspace for {firstName} • Target: {roleTitle}
+              Personalized for {firstName} • Target: {roleTitle}
             </p>
           </div>
         </div>
@@ -149,14 +169,6 @@ export default function AIChat() {
           <RefreshCw className="w-3.5 h-3.5" />
           <span className="hidden sm:inline">Reset</span>
         </button>
-      </div>
-
-      {/* Integration Notice Banner */}
-      <div className="p-3.5 rounded-2xl bg-indigo-50/70 dark:bg-indigo-950/30 border border-indigo-200/80 dark:border-indigo-800/60 flex items-center gap-3 text-xs text-indigo-900 dark:text-indigo-200 shrink-0">
-        <Info className="w-4 h-4 text-indigo-600 dark:text-indigo-400 shrink-0" />
-        <span className="font-semibold">
-          AI Career Assistant will be available after backend integration.
-        </span>
       </div>
 
       {/* Messages Scroll Area */}
@@ -220,6 +232,18 @@ export default function AIChat() {
           );
         })}
 
+        {loading && (
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-gradient-to-tr from-brand-600 to-indigo-600 text-white flex items-center justify-center">
+              <Bot className="w-4 h-4 animate-spin" />
+            </div>
+            <div className="p-3.5 rounded-2xl bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-xs text-slate-500 flex items-center gap-2">
+              <span className="inline-block w-2 h-2 rounded-full bg-brand-500 animate-ping" />
+              <span>Analyzing student profile & formulating response with Gemini 2.5 Flash...</span>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 
@@ -231,7 +255,8 @@ export default function AIChat() {
             <button
               key={idx}
               onClick={() => handleSend(item.query)}
-              className="px-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-brand-500/50 hover:bg-brand-50/50 dark:hover:bg-brand-950/20 text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 text-xs font-medium whitespace-nowrap flex items-center gap-1.5 transition-all shadow-sm shrink-0"
+              disabled={loading}
+              className="px-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 hover:border-brand-500/50 hover:bg-brand-50/50 dark:hover:bg-brand-950/20 text-slate-700 dark:text-slate-300 hover:text-brand-600 dark:hover:text-brand-400 text-xs font-medium whitespace-nowrap flex items-center gap-1.5 transition-all shadow-sm shrink-0 disabled:opacity-50"
             >
               <Icon className="w-3.5 h-3.5 text-brand-500" />
               <span>{item.label}</span>
@@ -252,12 +277,12 @@ export default function AIChat() {
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="AI Career Assistant will be available after backend integration."
+          placeholder="Ask CareerPilot AI anything about your technical career pathway..."
           className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
         />
         <button
           type="submit"
-          disabled={!inputText.trim()}
+          disabled={!inputText.trim() || loading}
           className="p-2.5 rounded-xl bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 text-white shadow-glow disabled:opacity-40 disabled:pointer-events-none hover:opacity-95 transition-all"
         >
           <Send className="w-4 h-4" />

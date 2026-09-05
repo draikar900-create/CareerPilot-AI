@@ -1,12 +1,10 @@
 import React, { useState } from 'react';
 import { useAuth } from '../../context/AuthContext';
-import { useProfile } from '../../context/ProfileContext';
 import { useToast } from '../../context/ToastContext';
 import { Eye, EyeOff, Lock, Mail, Sparkles, ArrowRight, ShieldCheck } from 'lucide-react';
 
 export default function LoginPage({ onLoginSuccess }) {
-  const { login, setAuthView } = useAuth();
-  const { isProfileCompleted } = useProfile();
+  const { signIn, signInWithGoogle, setAuthView } = useAuth();
   const { showToast } = useToast();
 
   const [identifier, setIdentifier] = useState('');
@@ -15,20 +13,10 @@ export default function LoginPage({ onLoginSuccess }) {
   const [rememberMe, setRememberMe] = useState(true);
   const [loading, setLoading] = useState(false);
 
-  const handleSuccessfulAuth = (email) => {
-    login(email, password, rememberMe);
-    showToast('Welcome back to CareerPilot AI!', 'success');
-
-    // Existing users navigate directly to Dashboard upon successful login
-    if (onLoginSuccess) {
-      onLoginSuccess('dashboard');
-    }
-  };
-
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     if (!identifier.trim()) {
-      showToast('Please enter your email or phone number', 'error');
+      showToast('Please enter your email address', 'error');
       return;
     }
     if (!password) {
@@ -37,18 +25,28 @@ export default function LoginPage({ onLoginSuccess }) {
     }
 
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await signIn(identifier.trim(), password);
+      showToast('Welcome back to CareerPilot AI!', 'success');
+      if (onLoginSuccess) {
+        onLoginSuccess('dashboard');
+      }
+    } catch (err) {
+      showToast(err.message || 'Login failed. Please check your credentials.', 'error');
+    } finally {
       setLoading(false);
-      handleSuccessfulAuth(identifier);
-    }, 400);
+    }
   };
 
-  const handleGoogleLogin = () => {
+  const handleGoogleLogin = async () => {
     setLoading(true);
-    setTimeout(() => {
+    try {
+      await signInWithGoogle();
+      // Browser will redirect to Google OAuth flow
+    } catch (err) {
+      showToast(err.message || 'Failed to initiate Google login', 'error');
       setLoading(false);
-      handleSuccessfulAuth('student.google@college.edu');
-    }, 400);
+    }
   };
 
   return (
@@ -67,18 +65,19 @@ export default function LoginPage({ onLoginSuccess }) {
       </div>
 
       <form onSubmit={handleSubmit} className="space-y-4">
-        {/* Email or Phone Input */}
+        {/* Email Input */}
         <div>
           <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
-            Email or Phone Number
+            Email Address
           </label>
           <div className="relative">
             <Mail className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
-              type="text"
+              type="email"
+              required
               value={identifier}
               onChange={(e) => setIdentifier(e.target.value)}
-              placeholder="Enter Email or Phone Number"
+              placeholder="Enter your registered email"
               className="w-full pl-10 pr-4 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-brand-500/50 text-sm transition-all"
             />
           </div>
@@ -102,6 +101,7 @@ export default function LoginPage({ onLoginSuccess }) {
             <Lock className="w-4 h-4 text-slate-400 absolute left-3.5 top-1/2 -translate-y-1/2" />
             <input
               type={showPassword ? 'text' : 'password'}
+              required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               placeholder="Enter Password"
@@ -134,7 +134,7 @@ export default function LoginPage({ onLoginSuccess }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 px-4 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 hover:opacity-95 shadow-glow transition-all flex items-center justify-center gap-2 mt-2"
+          className="w-full py-3 px-4 rounded-xl font-semibold text-sm text-white bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 hover:opacity-95 shadow-glow transition-all flex items-center justify-center gap-2 mt-2 disabled:opacity-50"
         >
           {loading ? (
             <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
@@ -146,10 +146,11 @@ export default function LoginPage({ onLoginSuccess }) {
           )}
         </button>
 
-        {/* Google OAuth Button */}
+        {/* Real Supabase Google OAuth Button */}
         <button
           type="button"
           onClick={handleGoogleLogin}
+          disabled={loading}
           className="w-full py-2.5 px-4 rounded-xl font-medium text-sm text-slate-700 dark:text-slate-200 bg-white/70 dark:bg-slate-800/70 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 transition-all flex items-center justify-center gap-2.5"
         >
           <svg className="w-4 h-4" viewBox="0 0 24 24">

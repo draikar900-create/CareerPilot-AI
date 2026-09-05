@@ -18,36 +18,36 @@ import {
   AlertCircle
 } from 'lucide-react';
 
-export default function Internships() {
+export default function Jobs() {
   const { currentRole } = useCareer();
   const { profile } = useProfile();
   const { showToast } = useToast();
 
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'saved'
-  const [internships, setInternships] = useState([]);
+  const [jobs, setJobs] = useState([]);
   const [myApplications, setMyApplications] = useState([]);
   const [savedItems, setSavedItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  const [selectedInternship, setSelectedInternship] = useState(null);
+  const [selectedJob, setSelectedJob] = useState(null);
   const [applyModalItem, setApplyModalItem] = useState(null);
   const [submitting, setSubmitting] = useState(false);
 
-  // Fetch real internships and applications from Supabase API
+  // Fetch real jobs and applications from Supabase API
   const fetchData = async () => {
     setLoading(true);
     try {
       const [intRes, appRes, savedRes] = await Promise.all([
-        apiService.getInternships(),
+        apiService.getJobs(),
         apiService.getMyApplications().catch(() => ({ success: true, applications: [] })),
         apiService.getSavedOpportunities().catch(() => ({ success: true, savedOpportunities: [] }))
       ]);
 
-      if (intRes.success) setInternships(intRes.internships || []);
+      if (intRes.success) setJobs(intRes.jobs || []);
       if (appRes.success) setMyApplications(appRes.applications || []);
       if (savedRes.success) setSavedItems(savedRes.savedOpportunities || []);
     } catch (err) {
-      showToast('Error loading internships: ' + err.message, 'error');
+      showToast('Error loading jobs: ' + err.message, 'error');
     } finally {
       setLoading(false);
     }
@@ -58,24 +58,24 @@ export default function Internships() {
   }, []);
 
   const appliedMap = (myApplications || []).reduce((acc, app) => {
-    if (app.internship_id) acc[app.internship_id] = app.status || 'Applied';
+    if (app.job_id) acc[app.job_id] = app.status || 'Applied';
     return acc;
   }, {});
 
   const savedIds = (savedItems || [])
-    .filter(item => item.opportunity_type === 'internship')
-    .map(item => item.internship_id);
+    .filter(item => item.opportunity_type === 'job')
+    .map(item => item.job_id);
 
-  const toggleSaveInternship = async (item) => {
+  const toggleSaveJob = async (item) => {
     const isSaved = savedIds.includes(item.id);
     try {
       if (isSaved) {
-        setSavedItems(prev => prev.filter(s => s.internship_id !== item.id));
+        setSavedItems(prev => prev.filter(s => s.job_id !== item.id));
         showToast(`Removed from Saved`, 'info');
       } else {
-        await apiService.saveOpportunity({ opportunity_type: 'internship', internship_id: item.id });
-        setSavedItems(prev => [...prev, { opportunity_type: 'internship', internship_id: item.id }]);
-        showToast(`Internship saved!`, 'success');
+        await apiService.saveOpportunity({ opportunity_type: 'job', job_id: item.id });
+        setSavedItems(prev => [...prev, { opportunity_type: 'job', job_id: item.id }]);
+        showToast(`Job saved!`, 'success');
       }
     } catch (err) {
       showToast(err.message || 'Failed to save opportunity', 'error');
@@ -93,8 +93,8 @@ export default function Internships() {
     setSubmitting(true);
     try {
       const res = await apiService.applyOpportunity({
-        opportunity_type: 'internship',
-        internship_id: applyModalItem.id,
+        opportunity_type: 'job',
+        job_id: applyModalItem.id,
         company_id: applyModalItem.company_id
       });
 
@@ -110,9 +110,9 @@ export default function Internships() {
     }
   };
 
-  const displayedInternships = activeSection === 'saved'
-    ? internships.filter(item => savedIds.includes(item.id))
-    : internships;
+  const displayedJobs = activeSection === 'saved'
+    ? jobs.filter(item => savedIds.includes(item.id))
+    : jobs;
 
   return (
     <div className="space-y-6 pb-12 max-w-6xl mx-auto">
@@ -126,10 +126,10 @@ export default function Internships() {
             <span>Real Opportunities Engine</span>
           </div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Verified Internship Opportunities
+            Verified Job Opportunities
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
-            Live internships published directly by company recruiters and placement officers for <strong className="text-slate-800 dark:text-slate-200">{currentRole?.title || 'Engineering Students'}</strong>.
+            Live jobs published directly by company recruiters and placement officers for <strong className="text-slate-800 dark:text-slate-200">{currentRole?.title || 'Engineering Students'}</strong>.
           </p>
         </div>
       </div>
@@ -146,9 +146,9 @@ export default function Internships() {
             }`}
           >
             <Briefcase className="w-3.5 h-3.5" />
-            <span>Published Internships</span>
+            <span>Published Jobs</span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeSection === 'all' ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-800'}`}>
-              {internships.length}
+              {jobs.length}
             </span>
           </button>
 
@@ -161,7 +161,7 @@ export default function Internships() {
             }`}
           >
             <Bookmark className={`w-3.5 h-3.5 ${savedIds.length > 0 ? 'fill-current' : ''}`} />
-            <span>Saved Internships</span>
+            <span>Saved Jobs</span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeSection === 'saved' ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-800'}`}>
               {savedIds.length}
             </span>
@@ -169,7 +169,7 @@ export default function Internships() {
         </div>
 
         <span className="text-xs text-slate-400">
-          Showing {displayedInternships.length} {activeSection === 'saved' ? 'Saved' : 'Active'} Opportunities
+          Showing {displayedJobs.length} {activeSection === 'saved' ? 'Saved' : 'Active'} Opportunities
         </span>
       </div>
 
@@ -178,24 +178,24 @@ export default function Internships() {
           <div className="inline-block w-8 h-8 border-4 border-brand-500/30 border-t-brand-500 rounded-full animate-spin mb-3" />
           <p className="text-xs text-slate-400">Fetching live database opportunities...</p>
         </div>
-      ) : displayedInternships.length === 0 ? (
+      ) : displayedJobs.length === 0 ? (
         <div className="glass-card rounded-3xl p-12 text-center border border-slate-200/80 dark:border-white/10 space-y-4 animate-fade-in">
           <div className="w-16 h-16 mx-auto rounded-2xl bg-indigo-500/10 text-brand-500 flex items-center justify-center">
             <Briefcase className="w-8 h-8" />
           </div>
           <h3 className="text-xl font-bold text-slate-900 dark:text-white">
-            {activeSection === 'saved' ? 'No saved internships yet.' : 'No internships available yet.'}
+            {activeSection === 'saved' ? 'No saved jobs yet.' : 'No jobs available yet.'}
           </h3>
           <p className="text-sm text-slate-500 dark:text-slate-400 max-w-md mx-auto">
             {activeSection === 'saved'
-              ? 'Click Save on any internship card to bookmark it for later review.'
-              : 'Placement officers and recruiters have not published any internships yet. Check back soon!'}
+              ? 'Click Save on any job card to bookmark it for later review.'
+              : 'Placement officers and recruiters have not published any jobs yet. Check back soon!'}
           </p>
         </div>
       ) : (
-        /* Internships List Grid */
+        /* Jobs List Grid */
         <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {displayedInternships.map((item) => {
+          {displayedJobs.map((item) => {
             const currentStatus = appliedMap[item.id];
             const isApplied = !!currentStatus;
             const isSaved = savedIds.includes(item.id);
@@ -229,7 +229,7 @@ export default function Internships() {
                         )}
                       </div>
                       <h3 className="text-base font-bold text-slate-900 dark:text-white mt-0.5">
-                        {item.role_title || item.title}
+                        {item.title || item.title}
                       </h3>
                     </div>
                   </div>
@@ -242,11 +242,11 @@ export default function Internships() {
                     </div>
                     <div className="flex items-center gap-1.5 font-semibold text-emerald-600 dark:text-emerald-400">
                       <DollarSign className="w-3.5 h-3.5 shrink-0" />
-                      <span>{item.stipend || 'Stipend Unspecified'}</span>
+                      <span>{item.salary_package || 'Stipend Unspecified'}</span>
                     </div>
                     <div className="flex items-center gap-1.5">
                       <Clock className="w-3.5 h-3.5 text-slate-400 shrink-0" />
-                      <span>{item.duration || '3 Months'}</span>
+                      <span>{item.experience || '3 Months'}</span>
                     </div>
                     <div className="flex items-center gap-1.5 text-rose-500">
                       <Calendar className="w-3.5 h-3.5 shrink-0" />
@@ -278,7 +278,7 @@ export default function Internships() {
                 <div className="grid grid-cols-3 gap-2 mt-6 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
                   <button
                     type="button"
-                    onClick={() => setSelectedInternship(item)}
+                    onClick={() => setSelectedJob(item)}
                     className="py-2.5 px-3 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800/80 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <Eye className="w-3.5 h-3.5" />
@@ -301,7 +301,7 @@ export default function Internships() {
 
                   <button
                     type="button"
-                    onClick={() => toggleSaveInternship(item)}
+                    onClick={() => toggleSaveJob(item)}
                     className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                       isSaved
                         ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30'
@@ -319,43 +319,43 @@ export default function Internships() {
       )}
 
       {/* View Details Modal */}
-      {selectedInternship && (
+      {selectedJob && (
         <Modal
-          isOpen={!!selectedInternship}
-          onClose={() => setSelectedInternship(null)}
-          title={`${selectedInternship.companies?.name || 'Company'} – ${selectedInternship.role_title || selectedInternship.title}`}
+          isOpen={!!selectedJob}
+          onClose={() => setSelectedJob(null)}
+          title={`${selectedJob.companies?.name || 'Company'} – ${selectedJob.title || selectedJob.title}`}
         >
           <div className="space-y-4">
             <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2 text-xs">
               <div className="flex justify-between">
                 <span className="text-slate-400">Location:</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedInternship.location}</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedJob.location}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Compensation:</span>
-                <span className="font-semibold text-emerald-500">{selectedInternship.stipend}</span>
+                <span className="font-semibold text-emerald-500">{selectedJob.salary_package}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-slate-400">Duration:</span>
-                <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedInternship.duration}</span>
+                <span className="font-semibold text-slate-800 dark:text-slate-200">{selectedJob.experience}</span>
               </div>
             </div>
 
             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
-              {selectedInternship.description || 'No detailed description provided.'}
+              {selectedJob.description || 'No detailed description provided.'}
             </p>
 
             <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
               <button
-                onClick={() => setSelectedInternship(null)}
+                onClick={() => setSelectedJob(null)}
                 className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-300 hover:bg-slate-100 cursor-pointer"
               >
                 Close
               </button>
               <button
                 onClick={() => {
-                  const item = selectedInternship;
-                  setSelectedInternship(null);
+                  const item = selectedJob;
+                  setSelectedJob(null);
                   setApplyModalItem(item);
                 }}
                 className="px-5 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-glow cursor-pointer"
@@ -376,7 +376,7 @@ export default function Internships() {
         >
           <form onSubmit={handleApplySubmit} className="space-y-4">
             <div className="p-4 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-xs text-brand-600 dark:text-brand-300">
-              Applying for <strong>{applyModalItem.role_title || applyModalItem.title}</strong> with profile: <strong>{profile.fullName}</strong>.
+              Applying for <strong>{applyModalItem.title || applyModalItem.title}</strong> with profile: <strong>{profile.fullName}</strong>.
             </div>
 
             {/* Resume Status */}

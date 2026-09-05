@@ -29,9 +29,8 @@ export default function AdminLoginPage({ onAdminLoginSuccess }) {
     }
 
     setLoading(true);
-    setTimeout(() => {
+    adminLogin(adminEmail, password).then((res) => {
       setLoading(false);
-      const res = adminLogin(adminEmail, password);
       if (res.success) {
         showToast('Welcome to Placement Team Admin Console!', 'success');
         if (onAdminLoginSuccess) {
@@ -41,7 +40,11 @@ export default function AdminLoginPage({ onAdminLoginSuccess }) {
         setErrorMessage(res.error || 'Invalid credentials');
         showToast(res.error || 'Authentication failed', 'error');
       }
-    }, 450);
+    }).catch((err) => {
+      setLoading(false);
+      setErrorMessage(err.message || 'Authentication failed');
+      showToast(err.message || 'Authentication failed', 'error');
+    });
   };
 
   return (

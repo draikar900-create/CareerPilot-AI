@@ -1,107 +1,110 @@
-import React, { createContext, useContext, useState } from 'react';
-import {
-  INITIAL_ADMIN_USERS,
-  RECOMMENDED_PROJECTS,
-  RECOMMENDED_INTERNSHIPS,
-  LEARNING_RESOURCES,
-  PLATFORM_USAGE_DATA
-} from '../data/mockData';
+import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from './ToastContext';
+import { apiService } from '../services/api';
 
 const AdminContext = createContext();
 
 export function AdminProvider({ children }) {
   const { showToast } = useToast();
 
-  const [users, setUsers] = useState(INITIAL_ADMIN_USERS);
-  const [projects, setProjects] = useState(RECOMMENDED_PROJECTS);
-  const [internships, setInternships] = useState(RECOMMENDED_INTERNSHIPS);
-  const [resources, setResources] = useState(LEARNING_RESOURCES);
+  const [users, setUsers] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [internships, setInternships] = useState([]);
+  const [resources, setResources] = useState([]);
+  const [companies, setCompanies] = useState([]);
+  const [jobs, setJobs] = useState([]);
+  const [applications, setApplications] = useState([]);
 
-  // User CRUD
-  const addUser = (userData) => {
-    const newUser = {
-      id: `u-${Date.now()}`,
-      ...userData,
-      status: 'Active',
-      readinessScore: Math.floor(65 + Math.random() * 25)
-    };
-    setUsers(prev => [newUser, ...prev]);
-    showToast(`User "${userData.name}" added successfully!`, 'success');
+  const refreshAdminData = async () => {
+    try {
+      const [uRes, cRes, jRes, iRes, aRes] = await Promise.all([
+        apiService.getAdminStudents().catch(() => ({ success: true, students: [] })),
+        apiService.getCompanies().catch(() => ({ success: true, companies: [] })),
+        apiService.getJobs().catch(() => ({ success: true, jobs: [] })),
+        apiService.getInternships().catch(() => ({ success: true, internships: [] })),
+        apiService.getAdminApplications().catch(() => ({ success: true, applications: [] }))
+      ]);
+
+      if (uRes.success) setUsers(uRes.students || []);
+      if (cRes.success) setCompanies(cRes.companies || []);
+      if (jRes.success) setJobs(jRes.jobs || []);
+      if (iRes.success) setInternships(iRes.internships || []);
+      if (aRes.success) setApplications(aRes.applications || []);
+    } catch (err) {
+      console.warn('Admin context sync warning:', err.message);
+    }
   };
 
-  const updateUser = (id, updatedFields) => {
-    setUsers(prev => prev.map(u => (u.id === id ? { ...u, ...updatedFields } : u)));
-    showToast('User profile updated successfully!', 'success');
+  useEffect(() => {
+    refreshAdminData();
+  }, []);
+
+  const addCompany = async (companyData) => {
+    try {
+      const res = await apiService.createCompany(companyData);
+      if (res.success) {
+        showToast(`Company "${companyData.name}" added successfully!`, 'success');
+        refreshAdminData();
+        return res.company;
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to add company', 'error');
+    }
   };
 
-  const deleteUser = (id) => {
-    setUsers(prev => prev.filter(u => u.id !== id));
-    showToast('User deleted from registry.', 'info');
+  const addJob = async (jobData) => {
+    try {
+      const res = await apiService.createJob(jobData);
+      if (res.success) {
+        showToast(`Job "${jobData.title}" published!`, 'success');
+        refreshAdminData();
+        return res.job;
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to publish job', 'error');
+    }
   };
 
-  // Content CRUD
-  const addProject = (projectData) => {
-    const newProj = {
-      id: `proj-${Date.now()}`,
-      ...projectData,
-      stars: 0
-    };
-    setProjects(prev => [newProj, ...prev]);
-    showToast(`Project "${projectData.title}" published!`, 'success');
+  const addInternship = async (internData) => {
+    try {
+      const res = await apiService.createInternship(internData);
+      if (res.success) {
+        showToast(`Internship published successfully!`, 'success');
+        refreshAdminData();
+        return res.internship;
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to publish internship', 'error');
+    }
   };
 
-  const deleteProject = (id) => {
-    setProjects(prev => prev.filter(p => p.id !== id));
-    showToast('Project deleted successfully.', 'info');
-  };
-
-  const addInternship = (internData) => {
-    const newIntern = {
-      id: `intern-${Date.now()}`,
-      ...internData,
-      applicants: 1
-    };
-    setInternships(prev => [newIntern, ...prev]);
-    showToast(`Internship at "${internData.company}" added!`, 'success');
-  };
-
-  const deleteInternship = (id) => {
-    setInternships(prev => prev.filter(i => i.id !== id));
-    showToast('Internship listing removed.', 'info');
-  };
-
-  const addResource = (resourceData) => {
-    const newRes = {
-      id: `res-${Date.now()}`,
-      ...resourceData
-    };
-    setResources(prev => [newRes, ...prev]);
-    showToast(`Resource "${resourceData.title}" added!`, 'success');
-  };
-
-  const deleteResource = (id) => {
-    setResources(prev => prev.filter(r => r.id !== id));
-    showToast('Resource removed from catalog.', 'info');
+  const updateApplicationStatus = async (id, status) => {
+    try {
+      const res = await apiService.updateApplicationStatus(id, status);
+      if (res.success) {
+        showToast(`Application status updated to ${status}`, 'success');
+        refreshAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to update application status', 'error');
+    }
   };
 
   return (
     <AdminContext.Provider
       value={{
         users,
-        addUser,
-        updateUser,
-        deleteUser,
         projects,
-        addProject,
-        deleteProject,
         internships,
-        addInternship,
-        deleteInternship,
         resources,
-        addResource,
-        deleteResource,
-        platformUsage: PLATFORM_USAGE_DATA
+        companies,
+        jobs,
+        applications,
+        refreshAdminData,
+        addCompany,
+        addJob,
+        addInternship,
+        updateApplicationStatus
       }}
     >
       {children}

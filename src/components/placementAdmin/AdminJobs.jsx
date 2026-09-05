@@ -24,20 +24,20 @@ export default function AdminJobs() {
 
   // Form State
   const [formData, setFormData] = useState({
-    company: '',
-    role: '',
+    company_id: '',
+    title: '',
     location: '',
-    salary: '',
-    applyLink: ''
+    salary_package: '',
+    external_url: ''
   });
 
   const openAddModal = () => {
     setFormData({
-      company: companies[0]?.name || '',
-      role: '',
+      company_id: companies[0]?.id || '',
+      title: '',
       location: 'Bangalore, India',
-      salary: '₹18 - 22 LPA',
-      applyLink: ''
+      salary_package: '₹18 - 22 LPA',
+      external_url: ''
     });
     setShowAddModal(true);
   };
@@ -45,17 +45,17 @@ export default function AdminJobs() {
   const openEditModal = (job) => {
     setEditingJob(job);
     setFormData({
-      company: job.company,
-      role: job.role,
-      location: job.location,
-      salary: job.salary,
-      applyLink: job.applyLink
+      company_id: job.company_id || '',
+      title: job.title || '',
+      location: job.location || '',
+      salary_package: job.salary_package || '',
+      external_url: job.external_url || ''
     });
   };
 
   const handleSaveJob = (e) => {
     e.preventDefault();
-    if (!formData.role.trim() || !formData.company.trim()) return;
+    if (!formData.title.trim() || !formData.company_id) return;
 
     if (editingJob) {
       updateJob(editingJob.id, formData);
@@ -73,11 +73,11 @@ export default function AdminJobs() {
     }
   };
 
-  const filteredJobs = jobs.filter(
+  const filteredJobs = (jobs || []).filter(
     (j) =>
-      j.role.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      j.company.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      j.location.toLowerCase().includes(searchQuery.toLowerCase())
+      (j?.title || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (j?.companies?.name || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (j?.location || '').toLowerCase().includes(searchQuery.toLowerCase())
   );
 
   return (
@@ -151,14 +151,14 @@ export default function AdminJobs() {
                     className="hover:bg-emerald-50/40 dark:hover:bg-emerald-950/20 transition-colors"
                   >
                     <td className="py-3.5 px-4 font-bold text-slate-900 dark:text-white">
-                      <div className="text-sm">{job.role}</div>
+                      <div className="text-sm">{job.title}</div>
                       <span className="text-[10px] text-slate-400 font-mono">{job.id}</span>
                     </td>
 
                     <td className="py-3.5 px-4">
                       <div className="flex items-center gap-1.5 font-semibold text-slate-800 dark:text-slate-200">
                         <Building2 className="w-3.5 h-3.5 text-slate-400" />
-                        <span>{job.company}</span>
+                        <span>{job.companies?.name || 'Unknown Company'}</span>
                       </div>
                     </td>
 
@@ -170,13 +170,13 @@ export default function AdminJobs() {
                     </td>
 
                     <td className="py-3.5 px-4 font-bold text-emerald-600 dark:text-emerald-400">
-                      {job.salary}
+                      {job.salary_package}
                     </td>
 
                     <td className="py-3.5 px-4">
-                      {job.applyLink ? (
+                      {job.external_url ? (
                         <a
-                          href={job.applyLink}
+                          href={job.external_url}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1 px-2.5 py-1 rounded-lg text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-50 dark:bg-indigo-950/40 hover:underline border border-indigo-200 dark:border-indigo-800/60"
@@ -240,14 +240,17 @@ export default function AdminJobs() {
                 <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1.5">
                   Company *
                 </label>
-                <input
-                  type="text"
+                <select
                   required
-                  value={formData.company}
-                  onChange={(e) => setFormData({ ...formData, company: e.target.value })}
-                  placeholder="e.g. Google, Salutex AI, Amazon"
+                  value={formData.company_id}
+                  onChange={(e) => setFormData({ ...formData, company_id: e.target.value })}
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
-                />
+                >
+                  <option value="" disabled>Select a company</option>
+                  {(companies || []).map(c => (
+                    <option key={c.id} value={c.id}>{c.name}</option>
+                  ))}
+                </select>
               </div>
 
               <div>
@@ -257,8 +260,8 @@ export default function AdminJobs() {
                 <input
                   type="text"
                   required
-                  value={formData.role}
-                  onChange={(e) => setFormData({ ...formData, role: e.target.value })}
+                  value={formData.title}
+                  onChange={(e) => setFormData({ ...formData, title: e.target.value })}
                   placeholder="e.g. Software Development Engineer (SDE-1)"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                 />
@@ -284,8 +287,8 @@ export default function AdminJobs() {
                   </label>
                   <input
                     type="text"
-                    value={formData.salary}
-                    onChange={(e) => setFormData({ ...formData, salary: e.target.value })}
+                    value={formData.salary_package}
+                    onChange={(e) => setFormData({ ...formData, salary_package: e.target.value })}
                     placeholder="e.g. ₹20 - 24 LPA"
                     className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                   />
@@ -298,8 +301,8 @@ export default function AdminJobs() {
                 </label>
                 <input
                   type="url"
-                  value={formData.applyLink}
-                  onChange={(e) => setFormData({ ...formData, applyLink: e.target.value })}
+                  value={formData.external_url}
+                  onChange={(e) => setFormData({ ...formData, external_url: e.target.value })}
                   placeholder="https://company.com/careers/job-id"
                   className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-800/80 text-slate-900 dark:text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-emerald-500/50"
                 />
@@ -341,7 +344,7 @@ export default function AdminJobs() {
               </h3>
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 leading-relaxed">
-              Are you sure you want to remove <strong className="text-slate-900 dark:text-white">{deletingJob.role}</strong> at <strong className="text-slate-900 dark:text-white">{deletingJob.company}</strong>?
+              Are you sure you want to remove <strong className="text-slate-900 dark:text-white">{deletingJob.title}</strong> at <strong className="text-slate-900 dark:text-white">{deletingJob.companies?.name || 'Unknown Company'}</strong>?
             </p>
 
             <div className="flex items-center justify-end gap-3 mt-6">

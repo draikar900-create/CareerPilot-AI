@@ -16,7 +16,8 @@
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "recharts": "^3.10.1",
-    "tailwind-merge": "^3.6.0"
+    "tailwind-merge": "^3.6.0",
+    "@supabase/supabase-js": "^2.45.4"
   },
   "devDependencies": {
     "@types/react": "^19.2.18",

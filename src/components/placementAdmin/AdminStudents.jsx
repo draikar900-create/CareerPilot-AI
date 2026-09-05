@@ -26,21 +26,26 @@ export default function AdminStudents() {
   // Filtering
   const filteredStudents = useMemo(() => {
     return students.filter((student) => {
+      const name = student.name || student.full_name || 'Unnamed Student';
+      const careerGoal = student.careerGoal || student.career_goal || 'Software Engineer';
+      const branch = student.branch || 'CSE';
+      const readinessScore = student.readinessScore || student.readiness_score || 80;
+
       const matchesSearch =
-        student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.careerGoal.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        student.branch.toLowerCase().includes(searchQuery.toLowerCase());
+        name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        careerGoal.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        branch.toLowerCase().includes(searchQuery.toLowerCase());
 
       const matchesBranch =
-        branchFilter === 'ALL' || student.branch.toUpperCase() === branchFilter.toUpperCase();
+        branchFilter === 'ALL' || branch.toUpperCase() === branchFilter.toUpperCase();
 
       let matchesReadiness = true;
       if (readinessFilter === 'READY') {
-        matchesReadiness = student.readinessScore >= 85;
+        matchesReadiness = readinessScore >= 85;
       } else if (readinessFilter === 'DEVELOPING') {
-        matchesReadiness = student.readinessScore >= 75 && student.readinessScore < 85;
+        matchesReadiness = readinessScore >= 75 && readinessScore < 85;
       } else if (readinessFilter === 'NEEDS_PREP') {
-        matchesReadiness = student.readinessScore < 75;
+        matchesReadiness = readinessScore < 75;
       }
 
       return matchesSearch && matchesBranch && matchesReadiness;
@@ -176,83 +181,94 @@ export default function AdminStudents() {
                   </td>
                 </tr>
               ) : (
-                paginatedStudents.map((s) => (
-                  <tr
-                    key={s.id}
-                    className="hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 transition-colors"
-                  >
-                    <td className="py-3.5 px-4">
-                      <div className="font-bold text-slate-900 dark:text-white">
-                        {s.name}
-                      </div>
-                      <span className="text-[10px] text-slate-400">{s.id}</span>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${getBranchBadge(
-                          s.branch
-                        )}`}
-                      >
-                        {s.branch}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 font-semibold text-slate-800 dark:text-slate-200">
-                      {s.cgpa.toFixed(2)}
-                    </td>
-                    <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-300">
-                      {s.careerGoal}
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <div className="flex items-center gap-2">
+                paginatedStudents.map((s) => {
+                  const sName = s.name || s.full_name || 'Unnamed Student';
+                  const sBranch = s.branch || 'CSE';
+                  const sCgpa = typeof s.cgpa === 'number' ? s.cgpa : parseFloat(s.cgpa || 8.0);
+                  const sGoal = s.careerGoal || s.career_goal || 'Software Engineer';
+                  const sReadiness = s.readinessScore || s.readiness_score || 80;
+                  const sProj = s.projectsCount || s.projects_count || 0;
+                  const sCert = s.certificatesCount || s.certificates_count || 0;
+                  const sResume = s.resumeScore || s.resume_score || 85;
+
+                  return (
+                    <tr
+                      key={s.id || s.user_id || s.email}
+                      className="hover:bg-indigo-50/40 dark:hover:bg-indigo-950/20 transition-colors"
+                    >
+                      <td className="py-3.5 px-4">
+                        <div className="font-bold text-slate-900 dark:text-white">
+                          {sName}
+                        </div>
+                        <span className="text-[10px] text-slate-400">{s.email || s.id}</span>
+                      </td>
+                      <td className="py-3.5 px-3">
                         <span
-                          className={`font-bold ${
-                            s.readinessScore >= 85
+                          className={`inline-block px-2.5 py-0.5 rounded-md text-[11px] font-bold border ${getBranchBadge(
+                            sBranch
+                          )}`}
+                        >
+                          {sBranch}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 font-semibold text-slate-800 dark:text-slate-200">
+                        {sCgpa.toFixed(2)}
+                      </td>
+                      <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-300">
+                        {sGoal}
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <div className="flex items-center gap-2">
+                          <span
+                            className={`font-bold ${
+                              sReadiness >= 85
+                                ? 'text-emerald-500'
+                                : sReadiness >= 75
+                                ? 'text-indigo-500'
+                                : 'text-amber-500'
+                            }`}
+                          >
+                            {sReadiness}%
+                          </span>
+                          <div className="w-16 bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden hidden sm:block">
+                            <div
+                              className={`h-full rounded-full ${
+                                sReadiness >= 85
+                                  ? 'bg-emerald-500'
+                                  : sReadiness >= 75
+                                  ? 'bg-indigo-500'
+                                  : 'bg-amber-500'
+                              }`}
+                              style={{ width: `${sReadiness}%` }}
+                            />
+                          </div>
+                        </div>
+                      </td>
+                      <td className="py-3.5 px-3 text-center font-semibold text-slate-700 dark:text-slate-300">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 font-bold">
+                          {sProj}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3 text-center font-semibold text-slate-700 dark:text-slate-300">
+                        <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 font-bold">
+                          {sCert}
+                        </span>
+                      </td>
+                      <td className="py-3.5 px-3">
+                        <span
+                          className={`inline-flex items-center gap-1 font-bold ${
+                            sResume >= 85
                               ? 'text-emerald-500'
-                              : s.readinessScore >= 75
-                              ? 'text-indigo-500'
-                              : 'text-amber-500'
+                              : 'text-indigo-500'
                           }`}
                         >
-                          {s.readinessScore}%
+                          <Sparkles className="w-3 h-3" />
+                          {sResume}%
                         </span>
-                        <div className="w-16 bg-slate-200 dark:bg-slate-800 h-1.5 rounded-full overflow-hidden hidden sm:block">
-                          <div
-                            className={`h-full rounded-full ${
-                              s.readinessScore >= 85
-                                ? 'bg-emerald-500'
-                                : s.readinessScore >= 75
-                                ? 'bg-indigo-500'
-                                : 'bg-amber-500'
-                            }`}
-                            style={{ width: `${s.readinessScore}%` }}
-                          />
-                        </div>
-                      </div>
-                    </td>
-                    <td className="py-3.5 px-3 text-center font-semibold text-slate-700 dark:text-slate-300">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 font-bold">
-                        {s.projectsCount}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3 text-center font-semibold text-slate-700 dark:text-slate-300">
-                      <span className="inline-flex items-center justify-center w-6 h-6 rounded-full bg-slate-100 dark:bg-slate-800 font-bold">
-                        {s.certificatesCount}
-                      </span>
-                    </td>
-                    <td className="py-3.5 px-3">
-                      <span
-                        className={`inline-flex items-center gap-1 font-bold ${
-                          s.resumeScore >= 85
-                            ? 'text-emerald-500'
-                            : 'text-indigo-500'
-                        }`}
-                      >
-                        <Sparkles className="w-3 h-3" />
-                        {s.resumeScore}/100
-                      </span>
-                    </td>
-                  </tr>
-                ))
+                      </td>
+                    </tr>
+                  );
+                })
               )}
             </tbody>
           </table>

@@ -1,74 +1,94 @@
-import React from 'react';
-import { useAdmin } from '../../context/AdminContext';
+import React, { useState, useEffect } from 'react';
 import { useTheme } from '../../context/ThemeContext';
+import { apiService } from '../../services/api';
 import {
   Users,
-  UserCheck,
-  UserPlus,
+  Building2,
   Briefcase,
-  FolderGit2,
-  TrendingUp,
+  FileCheck,
   ShieldAlert,
-  ArrowUpRight,
-  Database,
-  BarChart4
+  Database
 } from 'lucide-react';
-import {
-  ResponsiveContainer,
-  AreaChart,
-  Area,
-  XAxis,
-  YAxis,
-  CartesianGrid,
-  Tooltip
-} from 'recharts';
 
 export default function AdminDashboard({ setActiveTab }) {
-  const { users, projects, internships, resources, platformUsage } = useAdmin();
   const { isDark } = useTheme();
 
-  const totalUsers = users.length + 9420;
-  const activeUsers = Math.round(totalUsers * 0.84);
-  const newRegistrations = 428;
+  const [stats, setStats] = useState({
+    studentsCount: 0,
+    companiesCount: 0,
+    jobsCount: 0,
+    internshipsCount: 0,
+    applicationsCount: 0
+  });
+
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function loadAdminStats() {
+      setLoading(true);
+      try {
+        const [stRes, compRes, jobsRes, intRes, appRes] = await Promise.all([
+          apiService.getAdminStudents().catch(() => ({ success: true, students: [] })),
+          apiService.getCompanies().catch(() => ({ success: true, companies: [] })),
+          apiService.getJobs().catch(() => ({ success: true, jobs: [] })),
+          apiService.getInternships().catch(() => ({ success: true, internships: [] })),
+          apiService.getAdminApplications().catch(() => ({ success: true, applications: [] }))
+        ]);
+
+        setStats({
+          studentsCount: (stRes.students || []).length,
+          companiesCount: (compRes.companies || []).length,
+          jobsCount: (jobsRes.jobs || []).length,
+          internshipsCount: (intRes.internships || []).length,
+          applicationsCount: (appRes.applications || []).length
+        });
+      } catch (err) {
+        console.warn('Error loading admin dashboard stats:', err.message);
+      } finally {
+        setLoading(false);
+      }
+    }
+    loadAdminStats();
+  }, []);
 
   const kpiCards = [
     {
-      title: 'Total Users',
-      value: totalUsers.toLocaleString(),
-      subtext: '+18% MoM Growth',
+      title: 'Total Students',
+      value: stats.studentsCount,
+      subtext: 'Registered Supabase Accounts',
       icon: Users,
       color: 'text-brand-500',
       bg: 'bg-brand-500/10'
     },
     {
-      title: 'Active Users',
-      value: activeUsers.toLocaleString(),
-      subtext: '84% Engagement Rate',
-      icon: UserCheck,
+      title: 'Total Companies',
+      value: stats.companiesCount,
+      subtext: 'Database Company Records',
+      icon: Building2,
       color: 'text-emerald-500',
       bg: 'bg-emerald-500/10'
     },
     {
-      title: 'New Registrations',
-      value: newRegistrations.toLocaleString(),
-      subtext: 'Past 7 Days',
-      icon: UserPlus,
+      title: 'Published Jobs',
+      value: stats.jobsCount,
+      subtext: 'Active Job Openings',
+      icon: Briefcase,
       color: 'text-cyan-500',
       bg: 'bg-cyan-500/10'
     },
     {
-      title: 'Internship Listings',
-      value: internships.length + 18,
-      subtext: 'Tier-1 Tech Companies',
+      title: 'Published Internships',
+      value: stats.internshipsCount,
+      subtext: 'Active Internship Drives',
       icon: Briefcase,
       color: 'text-amber-500',
       bg: 'bg-amber-500/10'
     },
     {
-      title: 'Project Listings',
-      value: projects.length + 12,
-      subtext: 'Vetted Capstones',
-      icon: FolderGit2,
+      title: 'Total Applications',
+      value: stats.applicationsCount,
+      subtext: 'Submitted Applications',
+      icon: FileCheck,
       color: 'text-purple-500',
       bg: 'bg-purple-500/10'
     }
@@ -90,30 +110,23 @@ export default function AdminDashboard({ setActiveTab }) {
               Admin Platform Overview
             </h1>
             <p className="text-sm text-slate-500 dark:text-slate-400 mt-1 max-w-xl">
-              Monitor active student registrations, curriculum content catalogues, and automated readiness index metrics.
+              Real-time database metrics calculated directly from Supabase PostgreSQL tables.
             </p>
           </div>
 
           <div className="flex items-center gap-2">
             <button
               onClick={() => setActiveTab('user-management')}
-              className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-brand-600 hover:bg-brand-500 shadow-glow flex items-center gap-2 transition-all"
+              className="px-4 py-2.5 rounded-xl font-bold text-xs text-white bg-brand-600 hover:bg-brand-500 shadow-glow flex items-center gap-2 transition-all cursor-pointer"
             >
               <Users className="w-4 h-4" />
-              <span>Manage Users</span>
-            </button>
-            <button
-              onClick={() => setActiveTab('content-management')}
-              className="px-4 py-2.5 rounded-xl font-semibold text-xs text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800/80 hover:bg-slate-100 dark:hover:bg-slate-800 border border-slate-200 dark:border-slate-700 flex items-center gap-2 transition-all"
-            >
-              <Database className="w-4 h-4" />
-              <span>Content Library</span>
+              <span>View Registered Students</span>
             </button>
           </div>
         </div>
       </div>
 
-      {/* 5 KPI Cards */}
+      {/* KPI Cards */}
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
         {kpiCards.map((card, idx) => {
           const Icon = card.icon;
@@ -133,7 +146,7 @@ export default function AdminDashboard({ setActiveTab }) {
 
               <div>
                 <span className="text-2xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-                  {card.value}
+                  {loading ? '...' : card.value}
                 </span>
                 <p className="text-[11px] font-semibold text-emerald-500 mt-1">
                   {card.subtext}
@@ -142,57 +155,6 @@ export default function AdminDashboard({ setActiveTab }) {
             </div>
           );
         })}
-      </div>
-
-      {/* Platform Activity Chart */}
-      <div className="glass-card rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-white/10 space-y-4">
-        <div className="flex items-center justify-between">
-          <div>
-            <h3 className="text-base font-bold text-slate-900 dark:text-white">
-              Platform Growth & Assessment Volume
-            </h3>
-            <p className="text-xs text-slate-400">
-              Active student enrollments and verified readiness evaluations
-            </p>
-          </div>
-          <button
-            onClick={() => setActiveTab('admin-analytics')}
-            className="text-xs font-bold text-brand-500 hover:underline flex items-center gap-1"
-          >
-            <span>Deep Analytics</span>
-            <ArrowUpRight className="w-3.5 h-3.5" />
-          </button>
-        </div>
-
-        <div className="w-full h-72">
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={platformUsage} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
-              <defs>
-                <linearGradient id="colorStudents" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="5%" stopColor="#6366f1" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                </linearGradient>
-                <linearGradient id="colorTests" x1="0%" y1="0%" x2="0%" y2="100%">
-                  <stop offset="5%" stopColor="#06b6d4" stopOpacity={0.4} />
-                  <stop offset="95%" stopColor="#06b6d4" stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke={isDark ? '#1e293b' : '#f1f5f9'} vertical={false} />
-              <XAxis dataKey="month" stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} tickLine={false} />
-              <YAxis stroke={isDark ? '#94a3b8' : '#64748b'} fontSize={11} tickLine={false} />
-              <Tooltip
-                contentStyle={{
-                  backgroundColor: isDark ? '#0f172a' : '#ffffff',
-                  borderColor: isDark ? '#1e293b' : '#e2e8f0',
-                  borderRadius: '0.75rem',
-                  fontSize: '12px'
-                }}
-              />
-              <Area type="monotone" dataKey="students" name="Active Students" stroke="#6366f1" strokeWidth={3} fillOpacity={1} fill="url(#colorStudents)" />
-              <Area type="monotone" dataKey="testsTaken" name="Readiness Tests" stroke="#06b6d4" strokeWidth={2} fillOpacity={1} fill="url(#colorTests)" />
-            </AreaChart>
-          </ResponsiveContainer>
-        </div>
       </div>
     </div>
   );

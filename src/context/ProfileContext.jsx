@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useAuth } from './AuthContext';
 import { useToast } from './ToastContext';
+import { apiService } from '../services/api';
 
 const ProfileContext = createContext();
 
@@ -24,162 +25,49 @@ const EMPTY_PROFILE = {
   resume: null
 };
 
-const isPromptOrInvalidText = (str, isShortField = false) => {
-  if (typeof str !== 'string') return false;
-  const hasPromptKeywords = (
-    str.includes('CareerPilot AI') ||
-    str.includes('Required Form Validation') ||
-    str.includes('Enhance the Student Profile') ||
-    str.includes('semester-based resume') ||
-    str.includes('Student Profile Validation Update') ||
-    str.includes('Student Profile Setup') ||
-    str.includes('When a user clicks') ||
-    str.includes('Save Profile') ||
-    (str.startsWith('#') && str.length > 20)
-  );
-  if (hasPromptKeywords) return true;
-  if (isShortField && str.length > 100) return true;
-  return false;
-};
-
-const isInvalidStudentName = (name) => {
-  if (!name || typeof name !== 'string') return true;
-  const trimmed = name.trim().toLowerCase();
-  if (!trimmed) return true;
-  return (
-    trimmed === 'placement team admin' ||
-    trimmed === 'placement officer' ||
-    trimmed === 'demo user' ||
-    trimmed === 'test user' ||
-    trimmed === 'student' ||
-    trimmed.includes('admin') ||
-    trimmed.includes('placement team') ||
-    isPromptOrInvalidText(name, true)
-  );
-};
-
-const cleanProfileData = (data, user) => {
-  if (!data || typeof data !== 'object') return data;
-  const cleaned = { ...data };
-  if (isPromptOrInvalidText(cleaned.branch, true)) {
-    cleaned.branch = '';
-  }
-  if (isInvalidStudentName(cleaned.fullName)) {
-    const validUserName = (user?.role === 'Student' && !isInvalidStudentName(user?.name)) ? user.name : '';
-    cleaned.fullName = validUserName || localStorage.getItem('cp_student_name') || '';
-  }
-  if (isPromptOrInvalidText(cleaned.collegeName, true)) {
-    cleaned.collegeName = '';
-  }
-  if (isPromptOrInvalidText(cleaned.achievements)) {
-    cleaned.achievements = '';
-  }
-  if (isPromptOrInvalidText(cleaned.certifications)) {
-    cleaned.certifications = '';
-  }
-  if (Array.isArray(cleaned.skills)) {
-    cleaned.skills = cleaned.skills.filter(s => !isPromptOrInvalidText(s, true));
-  }
-  return cleaned;
-};
-
 export function ProfileProvider({ children }) {
-  const { currentUser } = useAuth();
+  const { currentUser, isAuthenticated } = useAuth();
   const { showToast } = useToast();
 
-  const [profile, setProfile] = useState(() => {
-    const studentUser = currentUser?.role === 'Student' ? currentUser : null;
-    const fallbackName = (!isInvalidStudentName(studentUser?.name) ? studentUser.name : '') ||
-      localStorage.getItem('cp_student_name') ||
-      '';
-
-    const saved = localStorage.getItem('cp_profile');
-    if (saved) {
-      try {
-        const parsed = JSON.parse(saved);
-        const cleaned = cleanProfileData(parsed, studentUser);
-        localStorage.setItem('cp_profile', JSON.stringify(cleaned));
-        return {
-          ...EMPTY_PROFILE,
-          ...cleaned,
-          fullName: !isInvalidStudentName(cleaned.fullName) ? cleaned.fullName : fallbackName,
-          email: cleaned.email || studentUser?.email || '',
-          phone: cleaned.phone || studentUser?.phone || ''
-        };
-      } catch (e) {}
-    }
-    return {
-      ...EMPTY_PROFILE,
-      fullName: fallbackName,
-      email: studentUser?.email || '',
-      phone: studentUser?.phone || ''
-    };
-  });
-
+  const [profile, setProfile] = useState(EMPTY_PROFILE);
   const [isCalibrating, setIsCalibrating] = useState(false);
   const [profileSaveTimestamp, setProfileSaveTimestamp] = useState(Date.now());
 
-  // Proactively clean up any stale or corrupted localStorage data on mount
+  // Fetch profile from Backend API whenever user is authenticated
   useEffect(() => {
-    try {
-      const studentUser = currentUser?.role === 'Student' ? currentUser : null;
-      const saved = localStorage.getItem('cp_profile');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        const cleaned = cleanProfileData(parsed, studentUser);
-        if (JSON.stringify(cleaned) !== saved) {
-          localStorage.setItem('cp_profile', JSON.stringify(cleaned));
-          setProfile(prev => ({ ...prev, ...cleaned }));
-        }
-      }
-    } catch (e) {}
-  }, [currentUser]);
-
-  // Automatically synchronize name, email, phone from currentUser (strictly for authenticated Student only)
-  useEffect(() => {
-    if (currentUser && currentUser.role === 'Student' && !isInvalidStudentName(currentUser.name)) {
-      setProfile(prev => {
-        const safeName = currentUser.name.trim();
-        const safeEmail = currentUser.email || prev.email;
-        const safePhone = currentUser.phone || prev.phone;
-
-        const needsUpdate =
-          (safeName && prev.fullName !== safeName) ||
-          (currentUser.email && prev.email !== currentUser.email) ||
-          (currentUser.phone && prev.phone !== currentUser.phone);
-
-        if (needsUpdate) {
-          return {
-            ...prev,
-            fullName: safeName || prev.fullName,
-            email: safeEmail,
-            phone: safePhone
-          };
-        }
-        return prev;
-      });
+    if (isAuthenticated && currentUser?.id) {
+      apiService.getProfile()
+        .then(res => {
+          if (res.success && res.profile) {
+            const p = res.profile;
+            setProfile(prev => ({
+              ...prev,
+              fullName: p.full_name || currentUser.name || '',
+              email: p.email || currentUser.email || '',
+              phone: p.phone || currentUser.phone || '',
+              dob: p.date_of_birth || '',
+              collegeName: p.college_name || '',
+              branch: p.branch || '',
+              graduationYear: p.graduation_year || '',
+              currentSemester: p.semester || '',
+              cgpa: p.cgpa || '',
+              skills: p.technical_skills || [],
+              githubUrl: p.github_url || '',
+              linkedinUrl: p.linkedin_url || '',
+              photoUrl: p.profile_photo || '',
+              resume: p.resume_url ? { name: 'Resume.pdf', url: p.resume_url, size: 'PDF Document' } : null
+            }));
+          }
+        })
+        .catch(err => {
+          console.warn('Backend profile sync warning:', err.message);
+        });
+    } else if (!isAuthenticated) {
+      setProfile(EMPTY_PROFILE);
     }
-  }, [currentUser]);
-
-  // Persist profile in localStorage
-  useEffect(() => {
-    const studentUser = currentUser?.role === 'Student' ? currentUser : null;
-    const cleaned = cleanProfileData(profile, studentUser);
-    if (cleaned.fullName && !isInvalidStudentName(cleaned.fullName)) {
-      localStorage.setItem('cp_student_name', cleaned.fullName);
-    }
-    localStorage.setItem('cp_profile', JSON.stringify(cleaned));
-  }, [profile, currentUser]);
+  }, [isAuthenticated, currentUser]);
 
   const updateProfile = (field, value) => {
-    const isShort = ['branch', 'fullName', 'collegeName', 'email', 'phone', 'dob', 'githubUrl', 'linkedinUrl'].includes(field);
-    if (typeof value === 'string' && isPromptOrInvalidText(value, isShort)) {
-      setProfile(prev => ({
-        ...prev,
-        [field]: ''
-      }));
-      return;
-    }
     setProfile(prev => ({
       ...prev,
       [field]: value
@@ -191,50 +79,97 @@ export function ProfileProvider({ children }) {
     if (!trimmed) return;
     const exists = profile.skills.some(s => s.toLowerCase() === trimmed.toLowerCase());
     if (!exists) {
-      setProfile(prev => ({
-        ...prev,
-        skills: [...prev.skills, trimmed]
-      }));
+      const newSkills = [...profile.skills, trimmed];
+      setProfile(prev => ({ ...prev, skills: newSkills }));
       showToast(`Added skill "${trimmed}"`, 'success');
+      
+      if (isAuthenticated) {
+        apiService.updateProfile({ technical_skills: newSkills }).catch(() => {});
+      }
     } else {
       showToast(`Skill "${trimmed}" is already added`, 'info');
     }
   };
 
   const removeSkill = (skillToRemove) => {
-    setProfile(prev => ({
-      ...prev,
-      skills: prev.skills.filter(s => s.toLowerCase() !== skillToRemove.toLowerCase())
-    }));
+    const newSkills = profile.skills.filter(s => s.toLowerCase() !== skillToRemove.toLowerCase());
+    setProfile(prev => ({ ...prev, skills: newSkills }));
     showToast(`Removed skill "${skillToRemove}"`, 'info');
+
+    if (isAuthenticated) {
+      apiService.updateProfile({ technical_skills: newSkills }).catch(() => {});
+    }
   };
 
-  const handleResumeUpload = (file) => {
+  const handleResumeUpload = async (file) => {
     if (!file) return false;
     if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
       showToast('Error: Only PDF resumes are accepted', 'error');
       return false;
     }
+
+    try {
+      if (isAuthenticated) {
+        const res = await apiService.uploadResume(file);
+        if (res.success) {
+          setProfile(prev => ({
+            ...prev,
+            resume: {
+              name: file.name,
+              url: res.url,
+              size: `${(file.size / (1024 * 1024)).toFixed(1)} MB`,
+              atsScore: 88
+            }
+          }));
+          showToast('Resume uploaded to Supabase Storage successfully!', 'success');
+          return true;
+        }
+      }
+    } catch (err) {
+      showToast('Resume upload warning: ' + err.message, 'error');
+    }
+
+    // Local state fallback if backend upload encounters error
     const sizeMb = (file.size / (1024 * 1024)).toFixed(1);
     setProfile(prev => ({
       ...prev,
       resume: {
         name: file.name,
         size: `${sizeMb} MB`,
-        updatedAt: 'Just now',
-        atsScore: Math.floor(82 + Math.random() * 14)
+        atsScore: 85
       }
     }));
-    showToast('Resume uploaded and ATS calibrated successfully!', 'success');
+    showToast('Resume uploaded successfully!', 'success');
     return true;
   };
 
-  const saveProfile = (customProfile = null) => {
+  const saveProfile = async (customProfile = null) => {
     const toSave = customProfile || profile;
     setProfileSaveTimestamp(Date.now());
-    localStorage.setItem('cp_profile', JSON.stringify(toSave));
-    localStorage.setItem('cp_profile_completed', 'true');
-    showToast('Profile saved successfully.', 'success');
+
+    if (isAuthenticated) {
+      try {
+        await apiService.updateProfile({
+          full_name: toSave.fullName,
+          phone: toSave.phone,
+          college_name: toSave.collegeName,
+          branch: toSave.branch,
+          semester: Number(toSave.currentSemester) || null,
+          cgpa: Number(toSave.cgpa) || null,
+          graduation_year: Number(toSave.graduationYear) || null,
+          technical_skills: toSave.skills,
+          github_url: toSave.githubUrl,
+          linkedin_url: toSave.linkedinUrl
+        });
+        showToast('Profile saved to database successfully.', 'success');
+        return true;
+      } catch (err) {
+        showToast(err.message || 'Failed to save profile', 'error');
+        return false;
+      }
+    }
+
+    showToast('Profile saved locally.', 'success');
     return true;
   };
 
@@ -248,7 +183,6 @@ export function ProfileProvider({ children }) {
     }, 1200);
   };
 
-  // Compute profile completion percentage
   const profileCompletionPercentage = (() => {
     let filled = 0;
     let total = 8;

@@ -26,14 +26,15 @@ import {
 } from 'recharts';
 
 export default function AdminOverview({ setActiveTab }) {
-  const { overviewMetrics, branchData, students, companies, jobs, resources } = usePlacementAdmin();
+  const { overviewMetrics = {}, branchData = [], students = [], companies = [], jobs = [], resources = [] } = usePlacementAdmin();
   const { isDark } = useTheme();
 
+  const totalSt = overviewMetrics?.totalStudents || 0;
   const statCards = [
     {
       id: 'students',
       label: 'Total Students',
-      value: overviewMetrics.totalStudents.toLocaleString(),
+      value: totalSt.toLocaleString(),
       subtext: 'Enrolled across all engineering branches',
       icon: Users,
       color: 'from-blue-600 to-indigo-600',
@@ -43,7 +44,7 @@ export default function AdminOverview({ setActiveTab }) {
     {
       id: 'companies',
       label: 'Total Companies',
-      value: companies.length,
+      value: (companies || []).length,
       subtext: 'Active recruiting partners on campus',
       icon: Building2,
       color: 'from-purple-600 to-pink-600',
@@ -53,7 +54,7 @@ export default function AdminOverview({ setActiveTab }) {
     {
       id: 'jobs',
       label: 'Total Jobs',
-      value: jobs.length,
+      value: (jobs || []).length,
       subtext: 'Open placement & internship drives',
       icon: Briefcase,
       color: 'from-emerald-600 to-teal-600',
@@ -63,7 +64,7 @@ export default function AdminOverview({ setActiveTab }) {
     {
       id: 'resources',
       label: 'Total Resources',
-      value: resources.length,
+      value: (resources || []).length,
       subtext: 'Curated technical preparation modules',
       icon: BookOpen,
       color: 'from-amber-500 to-orange-600',
@@ -72,12 +73,13 @@ export default function AdminOverview({ setActiveTab }) {
     }
   ];
 
-  const profileCompletePercent = Math.round(
-    (overviewMetrics.studentsProfileCompleted / overviewMetrics.studentsRegistered) * 100
-  );
-  const readyPercent = Math.round(
-    (overviewMetrics.studentsPlacementReady / overviewMetrics.studentsRegistered) * 100
-  );
+  const registered = overviewMetrics?.studentsRegistered || 0;
+  const profileCompletePercent = registered > 0
+    ? Math.round(((overviewMetrics?.studentsProfileCompleted || 0) / registered) * 100)
+    : 0;
+  const readyPercent = registered > 0
+    ? Math.round(((overviewMetrics?.studentsPlacementReady || 0) / registered) * 100)
+    : 0;
 
   return (
     <div className="space-y-6 pb-12 max-w-7xl mx-auto animate-fade-in">

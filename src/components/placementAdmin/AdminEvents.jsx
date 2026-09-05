@@ -89,14 +89,14 @@ export default function AdminEvents() {
   // Filtered Events in Admin view
   const filteredEvents = useMemo(() => {
     const q = searchQuery.toLowerCase().trim();
-    return events.filter((evt) => {
+    return (events || []).filter((evt) => {
       const matchesSearch =
         !q ||
-        evt.name.toLowerCase().includes(q) ||
-        evt.collegeName?.toLowerCase().includes(q) ||
-        evt.type.toLowerCase().includes(q) ||
-        evt.venue?.toLowerCase().includes(q) ||
-        evt.description?.toLowerCase().includes(q);
+        (evt.name || evt.title || '').toLowerCase().includes(q) ||
+        (evt.collegeName || evt.college_name || '').toLowerCase().includes(q) ||
+        (evt.type || '').toLowerCase().includes(q) ||
+        (evt.venue || '').toLowerCase().includes(q) ||
+        (evt.description || '').toLowerCase().includes(q);
 
       const matchesCollege =
         selectedCollegeFilter === 'All' ||

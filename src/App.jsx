@@ -33,6 +33,7 @@ import SkillInsights from './components/skills/SkillInsights';
 import ReadinessTest from './components/skills/ReadinessTest';
 import Projects from './components/skills/Projects';
 import Internships from './components/skills/Internships';
+import Jobs from './components/skills/Jobs';
 import Certificates from './components/skills/Certificates';
 import Resources from './components/skills/Resources';
 import Events from './components/skills/Events';
@@ -223,7 +224,7 @@ function AppContent() {
             {activeTab === 'events' && <Events setActiveTab={handleTabChange} />}
             {activeTab === 'progress-tracking' && <ProgressTracking />}
             {activeTab === 'notifications' && <NotificationsSection setActiveTab={handleTabChange} />}
-            {activeTab === 'jobs' && <Internships />}
+            {activeTab === 'jobs' && <Jobs />}
             {activeTab === 'profile' && <StudentProfile setActiveTab={handleTabChange} />}
             {activeTab === 'settings' && <SettingsPage setActiveTab={handleTabChange} />}
 
