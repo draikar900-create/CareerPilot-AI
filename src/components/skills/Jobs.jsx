@@ -255,13 +255,13 @@ export default function Jobs() {
                   </div>
 
                   {/* Required Skills */}
-                  {(item.required_skills || []).length > 0 && (
+                  {(item.required_skills || item.requirements || []).length > 0 && (
                     <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
                         Required Skills
                       </span>
                       <div className="flex flex-wrap gap-1.5">
-                        {item.required_skills.map((sk) => (
+                        {(item.required_skills || item.requirements || []).map((sk) => (
                           <span
                             key={sk}
                             className="text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
@@ -309,7 +309,7 @@ export default function Jobs() {
                     }`}
                   >
                     <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
-                    <span>{isSaved ? 'Saved ✓' : 'Save'}</span>
+                    <span>{isSaved ? 'Saved' : 'Save'}</span>
                   </button>
                 </div>
               </div>

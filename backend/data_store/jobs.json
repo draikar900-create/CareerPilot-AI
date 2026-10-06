@@ -1,0 +1,302 @@
+[
+  {
+    "id": "a06804e6-69de-4890-821f-a76cf475d106",
+    "company_id": "aae6cd15-c3fb-4340-8061-f1307b8178fc",
+    "title": "Full Stack Engineer 1791140345552",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T18:59:08.293Z"
+  },
+  {
+    "id": "56e59f03-6c38-4d6b-8d9d-c6957eae50cc",
+    "company_id": "7a74ab96-00c9-4750-a388-dc6ec3cc2f54",
+    "title": "Full Stack Engineer 1791139258538",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T18:41:00.788Z"
+  },
+  {
+    "id": "d3e63231-6e7e-4acc-9b47-a27e276ac1d4",
+    "company_id": "cfcc32c2-e1b0-4727-9892-85860ef4ed72",
+    "title": "Full Stack Engineer 1791137693670",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T18:14:56.123Z"
+  },
+  {
+    "id": "f8402ab8-d64e-4e27-bc8d-5d3c1d269115",
+    "company_id": "0830b040-d579-40c1-a1fd-1a749dab62a8",
+    "title": "Full Stack Engineer 1791137305271",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T18:08:27.725Z"
+  },
+  {
+    "id": "c9e1e41b-9b67-4ed1-8da1-c84d63f26ab1",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "u5",
+    "description": "",
+    "location": "Bangalore, India",
+    "salary_package": "₹18 - 22 LPA",
+    "deadline": null,
+    "created_at": "2026-10-04T17:48:36.309Z"
+  },
+  {
+    "id": "e4d9e934-da54-478c-b0ca-9c80c0dada3d",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791126470727",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T15:07:53.295Z"
+  },
+  {
+    "id": "b79bca7f-eedc-4f2a-bd82-5ad0ee067033",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791126095537",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T15:01:38.894Z"
+  },
+  {
+    "id": "b1a78819-b67a-4190-b8fe-ec669c3ec0c1",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791126003210",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T15:00:07.053Z"
+  },
+  {
+    "id": "0d52c7bd-74d5-4b2b-9c4c-d9ba2a189972",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791125909780",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T14:58:32.331Z"
+  },
+  {
+    "id": "dd602885-e163-41eb-9320-fd1662ed75f0",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791125750743",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T14:55:53.753Z"
+  },
+  {
+    "id": "f1dbe214-5927-4902-96e5-1ba9e789ed2a",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791115623761",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T12:07:06.276Z"
+  },
+  {
+    "id": "35e54a35-f868-4ba3-bfb4-504d0fe1c367",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791115142839",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T11:59:05.031Z"
+  },
+  {
+    "id": "e66bd0a0-0504-49c8-8bf2-27ea3ee976bb",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791114508010",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T11:48:30.680Z"
+  },
+  {
+    "id": "cc5a7c44-b5b2-45af-919e-c5cb5bdadc11",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791114331833",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T11:45:34.470Z"
+  },
+  {
+    "id": "a50cffba-fb83-4616-8e7e-9a87e3a1f22f",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791114184292",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T11:43:07.361Z"
+  },
+  {
+    "id": "88803ad3-e3e3-443f-95c5-540f250a5157",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791113834014",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T11:37:16.686Z"
+  },
+  {
+    "id": "939079ae-b77d-4b48-bd76-d152c3fb82f6",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791113620503",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T11:33:46.480Z"
+  },
+  {
+    "id": "ea9a90e0-0f6e-4eda-babb-d36f8b3cafb4",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791112760346",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T11:19:23.005Z"
+  },
+  {
+    "id": "200c2fc7-a05e-4f57-93f3-b740fcf8747e",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791110514425",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T10:41:57.087Z"
+  },
+  {
+    "id": "6ce3a800-a17b-4c6b-b891-aa566308fd03",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791099031340",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T07:30:33.564Z"
+  },
+  {
+    "id": "091f8068-a9fb-4b39-bb75-a563d170522d",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791098924325",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T07:28:47.651Z"
+  },
+  {
+    "id": "4e08d9b9-4840-4044-962a-a29e6c0d6bbd",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791098681633",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T07:24:44.599Z"
+  },
+  {
+    "id": "313d99e4-a780-409e-b63f-5360f0a7dd45",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Full Stack Engineer 1791098507862",
+    "description": "Build enterprise React & Node.js web applications.",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-04T07:21:50.521Z"
+  },
+  {
+    "id": "cf1542f7-af65-46c6-a58c-39dc9f960774",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Lead Cloud Architect Drive 2026",
+    "description": "Enterprise cloud infrastructure design and automated deployment drive.",
+    "location": "Bangalore / Remote",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-03T18:57:59.265Z"
+  },
+  {
+    "id": "563dd731-a3c7-4ca9-bddf-b1bbbea94d9f",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Lead Cloud Architect Drive 2026",
+    "description": "Enterprise cloud infrastructure design and automated deployment drive.",
+    "location": "Bangalore / Remote",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-03T18:56:52.128Z"
+  },
+  {
+    "id": "653fb06a-fa31-4c8e-831d-70497a5e8193",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Campus Hiring Drive 1791025264182",
+    "description": "Annual placement drive for final year B.Tech students.",
+    "location": "Bangalore / Hyderabad",
+    "salary_package": "14 - 18 LPA",
+    "deadline": null,
+    "created_at": "2026-10-03T11:02:00.417Z"
+  },
+  {
+    "id": "e10be44f-afbf-4ac1-836f-5538041e517a",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Campus Drive Test",
+    "description": "",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-03T11:00:40.692Z"
+  },
+  {
+    "id": "3871740e-f1d1-45b6-8061-096ad0066077",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Campus Drive Test",
+    "description": "",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-03T10:59:04.334Z"
+  },
+  {
+    "id": "d3fee22f-0596-4b08-a37b-bea6e45b7d11",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Campus Drive Test",
+    "description": "",
+    "location": "Bangalore",
+    "salary_package": "Not specified",
+    "deadline": null,
+    "created_at": "2026-10-03T10:57:40.740Z"
+  },
+  {
+    "id": "845b37e3-04f5-4a0c-866a-ea5b68930d49",
+    "company_id": "b79fc83f-107c-44d2-961b-265dd00dd681",
+    "title": "Campus Hiring Drive 1791024924076",
+    "description": "Annual placement drive for final year B.Tech students.",
+    "location": "Bangalore / Hyderabad",
+    "salary_package": "14 - 18 LPA",
+    "deadline": null,
+    "created_at": "2026-10-03T10:56:22.909Z"
+  }
+]

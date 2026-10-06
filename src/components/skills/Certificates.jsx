@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { RECOMMENDED_CERTIFICATES } from '../../data/mockData';
+// import { RECOMMENDED_CERTIFICATES } from '../../data/mockData';
 import { useCareer } from '../../context/CareerContext';
 import { useToast } from '../../context/ToastContext';
 import Modal from '../common/Modal';
+import { apiService } from '../../services/api';
 import {
   Award,
   Clock,
@@ -18,6 +19,7 @@ export default function Certificates() {
   const { currentRole } = useCareer();
   const { showToast } = useToast();
 
+  const [certificates, setCertificates] = useState([]);
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'saved'
   const [selectedCert, setSelectedCert] = useState(null);
 
@@ -29,6 +31,28 @@ export default function Certificates() {
       return [];
     }
   });
+
+  useEffect(() => {
+    import('../../services/api').then(({ apiService }) => {
+      apiService.getCertificates().then(res => {
+        if (res.success) {
+          // Normalize API response to match component expectations
+          const fetchedCerts = (res.data || res.certificates || []).map(c => ({
+            id: c.id,
+            name: c.title || c.name,
+            provider: c.provider,
+            difficulty: c.difficulty || 'Intermediate',
+            duration: c.duration || 'Flexible',
+            rating: c.rating || 4.5,
+            badge: c.category || 'Certification',
+            skills: Array.isArray(c.skills) ? c.skills : (typeof c.skills === 'string' ? c.skills.split(',') : []),
+            link: c.credential_url || c.link
+          }));
+          setCertificates(fetchedCerts);
+        }
+      }).catch(console.error);
+    });
+  }, []);
 
   useEffect(() => {
     try {
@@ -47,8 +71,8 @@ export default function Certificates() {
   };
 
   const displayedCertificates = activeSection === 'saved'
-    ? RECOMMENDED_CERTIFICATES.filter(c => savedCertificateIds.includes(c.id))
-    : RECOMMENDED_CERTIFICATES;
+    ? certificates.filter(c => savedCertificateIds.includes(c.id))
+    : certificates;
 
   return (
     <div className="space-y-6 pb-12 max-w-6xl mx-auto">
@@ -57,7 +81,7 @@ export default function Certificates() {
         <div className="absolute top-0 right-0 w-80 h-80 bg-gradient-to-br from-purple-500/15 via-brand-500/10 to-transparent rounded-full filter blur-3xl pointer-events-none" />
 
         <div className="relative z-10">
-          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-brand-500/10 text-brand-500 border border-brand-500/20 mb-2">
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-sm font-semibold bg-brand-500/10 text-brand-500 border border-brand-500/20 mb-2">
             <Award className="w-3.5 h-3.5" />
             <span>Credentials Catalog</span>
           </div>
@@ -72,7 +96,7 @@ export default function Certificates() {
 
       {/* Module Navigation Tabs (All Certificates vs Saved Certificates) */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-        <div className="flex items-center gap-2 p-1.5 rounded-2xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 w-fit">
+        <div className="flex items-center gap-2 p-1.5 rounded-xl bg-slate-100 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 w-fit">
           <button
             onClick={() => setActiveSection('all')}
             className={`px-4 py-2 rounded-xl text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
@@ -84,7 +108,7 @@ export default function Certificates() {
             <Award className="w-3.5 h-3.5" />
             <span>All Certificates</span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeSection === 'all' ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-800'}`}>
-              {RECOMMENDED_CERTIFICATES.length}
+              {certificates.length}
             </span>
           </button>
 
@@ -143,7 +167,7 @@ export default function Certificates() {
               >
                 <div>
                   <div className="flex items-center justify-between gap-2 mb-3">
-                    <span className="text-[10px] font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-500 border border-brand-500/20">
+                    <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-brand-500/10 text-brand-500 border border-brand-500/20">
                       {cert.badge}
                     </span>
                     <div className="flex items-center gap-1 text-amber-500 text-xs font-bold">
@@ -152,9 +176,9 @@ export default function Certificates() {
                     </div>
                   </div>
 
-                  <h3 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
+                  <h2 className="text-base font-bold text-slate-900 dark:text-white leading-snug">
                     {cert.name}
-                  </h3>
+                  </h2>
 
                   <p className="text-xs text-brand-600 dark:text-brand-400 font-semibold mt-1">
                     Offered by: {cert.provider}
@@ -162,29 +186,34 @@ export default function Certificates() {
 
                   <div className="grid grid-cols-2 gap-2 mt-4 text-xs text-slate-500 dark:text-slate-400 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Difficulty</span>
+                      <span className="text-xs font-medium text-slate-400 block mb-1">Difficulty</span>
                       <span className="font-semibold text-slate-700 dark:text-slate-200">{cert.difficulty}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-slate-400 block">Duration</span>
+                      <span className="text-xs font-medium text-slate-400 block mb-1">Duration</span>
                       <span className="font-semibold text-slate-700 dark:text-slate-200">{cert.duration}</span>
                     </div>
                   </div>
 
                   {/* Skills */}
                   <div className="mt-4 pt-3 border-t border-slate-200/60 dark:border-slate-800/60">
-                    <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-2">
+                    <span className="text-xs font-semibold text-slate-500 block mb-2">
                       Key Skills Validated
                     </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {cert.skills.map((s) => (
+                      {cert.skills.slice(0, 3).map((s) => (
                         <span
                           key={s}
-                          className="text-[11px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
+                          className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
                         >
                           {s}
                         </span>
                       ))}
+                      {cert.skills.length > 3 && (
+                        <span className="text-xs font-medium px-2.5 py-1 rounded-lg bg-slate-100 dark:bg-slate-800 text-slate-500 dark:text-slate-400">
+                          +{cert.skills.length - 3} more
+                        </span>
+                      )}
                     </div>
                   </div>
                 </div>
@@ -194,7 +223,7 @@ export default function Certificates() {
                   <button
                     type="button"
                     onClick={() => setSelectedCert(cert)}
-                    className="py-2.5 px-3 rounded-xl text-xs font-bold bg-slate-100 dark:bg-slate-800/80 text-slate-800 dark:text-slate-200 hover:bg-brand-600 hover:text-white transition-all flex items-center justify-center gap-1.5 cursor-pointer"
+                    className="py-2.5 px-3 rounded-xl text-sm font-bold bg-brand-600 text-white hover:bg-brand-500 shadow-glow transition-all flex items-center justify-center gap-1.5 cursor-pointer"
                   >
                     <span>Explore</span>
                     <ExternalLink className="w-3.5 h-3.5" />
@@ -203,15 +232,15 @@ export default function Certificates() {
                   <button
                     type="button"
                     onClick={() => toggleSaveCertificate(cert)}
-                    className={`py-2.5 px-3 rounded-xl text-xs font-bold transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
+                    className={`py-2.5 px-3 rounded-xl text-sm font-medium transition-all flex items-center justify-center gap-1.5 cursor-pointer ${
                       isSaved
-                        ? 'bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/30 hover:bg-rose-500/10 hover:text-rose-500 hover:border-rose-500/30'
-                        : 'bg-brand-50 dark:bg-brand-950/30 text-brand-600 dark:text-brand-400 border border-brand-500/20 hover:bg-brand-600 hover:text-white'
+                        ? 'bg-emerald-50 dark:bg-emerald-500/10 text-emerald-600 border border-emerald-200 dark:border-emerald-500/30'
+                        : 'bg-transparent border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-800/50'
                     }`}
                     title={isSaved ? 'Click to remove from saved' : 'Save certification'}
                   >
                     <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
-                    <span>{isSaved ? 'Saved ✓' : 'Save'}</span>
+                    <span>{isSaved ? 'Saved' : 'Save'}</span>
                   </button>
                 </div>
               </div>
@@ -228,11 +257,11 @@ export default function Certificates() {
           title={selectedCert.name}
         >
           <div className="space-y-4">
-            <div className="p-4 rounded-2xl bg-brand-500/10 border border-brand-500/20 text-xs space-y-1">
+            <div className="p-4 rounded-xl bg-brand-500/10 border border-brand-500/20 text-sm space-y-2">
               <p><strong>Provider:</strong> {selectedCert.provider}</p>
               <p><strong>Difficulty Level:</strong> {selectedCert.difficulty}</p>
               <p><strong>Study Commitment:</strong> {selectedCert.duration}</p>
-              <p><strong>Satisfaction Rating:</strong> {selectedCert.rating} / 5.0 ⭐</p>
+              <p><strong>Satisfaction Rating:</strong> {selectedCert.rating} / 5.0</p>
             </div>
 
             <p className="text-sm text-slate-600 dark:text-slate-300 leading-relaxed">
@@ -249,7 +278,7 @@ export default function Certificates() {
                 }`}
               >
                 <Bookmark className={`w-3.5 h-3.5 ${savedCertificateIds.includes(selectedCert.id) ? 'fill-current' : ''}`} />
-                <span>{savedCertificateIds.includes(selectedCert.id) ? 'Saved ✓' : 'Save Certificate'}</span>
+                <span>{savedCertificateIds.includes(selectedCert.id) ? 'Saved' : 'Save Certificate'}</span>
               </button>
 
               <div className="flex items-center gap-2">

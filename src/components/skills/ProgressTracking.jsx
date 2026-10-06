@@ -14,7 +14,12 @@ import {
   ShieldCheck,
   Zap,
   Lock,
-  ArrowRight
+  ArrowRight,
+  UserCheck,
+  Code2,
+  Target,
+  Brain,
+  FileText
 } from 'lucide-react';
 
 export default function ProgressTracking({ setActiveTab }) {
@@ -73,42 +78,42 @@ export default function ProgressTracking({ setActiveTab }) {
       id: 'b1',
       title: 'First Step Pilot',
       desc: 'Completed initial Student Profile & contact setup',
-      icon: '🚀',
+      icon: UserCheck,
       unlocked: Boolean(profile.fullName && profile.email)
     },
     {
       id: 'b2',
       title: 'Skill Navigator',
       desc: 'Added 5 or more technical skills to profile',
-      icon: '⚡',
+      icon: Code2,
       unlocked: (profile.skills?.length || 0) >= 5
     },
     {
       id: 'b3',
       title: 'Career Strategist',
-      desc: 'Selected a dream target role in Career Goals',
-      icon: '🎯',
+      desc: 'Selected a target role in Career Goals',
+      icon: Target,
       unlocked: Boolean(currentRole)
     },
     {
       id: 'b4',
       title: 'Knowledge Evaluator',
       desc: 'Completed the Multi-Domain Readiness Quiz',
-      icon: '🧠',
+      icon: Brain,
       unlocked: Boolean(testResults?.taken)
     },
     {
       id: 'b5',
       title: 'Consistency Champion',
       desc: 'Maintained an active 3+ day learning streak',
-      icon: '🔥',
+      icon: Flame,
       unlocked: dailyStreak >= 3
     },
     {
       id: 'b6',
       title: 'Resume Pioneer',
       desc: 'Uploaded an ATS-compliant PDF resume',
-      icon: '📄',
+      icon: FileText,
       unlocked: Boolean(profile.resume)
     }
   ];
@@ -273,8 +278,8 @@ export default function ProgressTracking({ setActiveTab }) {
                   : 'bg-slate-50/50 dark:bg-slate-900/30 border-slate-200/50 dark:border-slate-800/50 opacity-60'
               }`}
             >
-              <div className="text-2xl shrink-0 p-2 rounded-xl bg-white dark:bg-slate-800 shadow-sm">
-                {b.unlocked ? b.icon : <Lock className="w-6 h-6 text-slate-400" />}
+              <div className="flex items-center justify-center shrink-0 p-2.5 rounded-xl bg-white dark:bg-slate-800 shadow-sm text-brand-500">
+                {b.unlocked ? <b.icon className="w-6 h-6" /> : <Lock className="w-6 h-6 text-slate-400" />}
               </div>
               <div>
                 <div className="flex items-center gap-1.5">

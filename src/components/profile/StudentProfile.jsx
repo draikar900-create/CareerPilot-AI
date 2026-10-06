@@ -6,6 +6,7 @@ import { useToast } from '../../context/ToastContext';
 import Modal from '../common/Modal';
 import { GithubIcon, LinkedinIcon } from '../common/BrandIcons';
 import { getInitials } from '../../utils/helpers';
+import { apiService } from '../../services/api';
 import {
   User,
   Mail,
@@ -24,7 +25,9 @@ import {
   Sparkles,
   ArrowRight,
   AlertCircle,
-  X
+  X,
+  Eye,
+  Download
 } from 'lucide-react';
 
 export default function StudentProfile({ setActiveTab }) {
@@ -35,6 +38,7 @@ export default function StudentProfile({ setActiveTab }) {
     addSkill,
     removeSkill,
     handleResumeUpload,
+    handleResumeDelete,
     saveProfile,
     refreshCareerCalibration,
     isCalibrating,
@@ -56,7 +60,7 @@ export default function StudentProfile({ setActiveTab }) {
   const isPromptOrInvalidText = (str, isShortField = false) => {
     if (typeof str !== 'string') return false;
     const hasPromptKeywords = (
-      str.includes('CareerPilot AI') ||
+      str.includes('CareerPilot') ||
       str.includes('Required Form Validation') ||
       str.includes('Enhance the Student Profile') ||
       str.includes('semester-based resume') ||
@@ -71,51 +75,29 @@ export default function StudentProfile({ setActiveTab }) {
     return false;
   };
 
-  const safeDefaultName = (currentUser?.role === 'Student' && currentUser?.name && !isPromptOrInvalidText(currentUser.name, true))
+  const safeDefaultName = (currentUser?.name && !isPromptOrInvalidText(currentUser.name, true))
     ? currentUser.name
-    : (localStorage.getItem('cp_student_name') || '');
+    : '';
   const cleanFullName = isPromptOrInvalidText(profile.fullName, true) ? safeDefaultName : (profile.fullName || safeDefaultName || '');
   const cleanBranch = isPromptOrInvalidText(profile.branch, true) ? '' : (profile.branch || '');
   const cleanCollege = isPromptOrInvalidText(profile.collegeName, true) ? '' : (profile.collegeName || '');
 
   // Auto-clean any corrupted prompt text from profile on mount
   React.useEffect(() => {
-    let changed = false;
     if (isPromptOrInvalidText(profile.branch, true)) {
       updateProfile('branch', '');
-      changed = true;
     }
     if (isPromptOrInvalidText(profile.fullName, true)) {
       updateProfile('fullName', safeDefaultName);
-      changed = true;
     }
     if (isPromptOrInvalidText(profile.collegeName, true)) {
       updateProfile('collegeName', '');
-      changed = true;
     }
     if (isPromptOrInvalidText(profile.achievements)) {
-      updateProfile('achievements', '');
-      changed = true;
+      updateProfile('achievements', []);
     }
-    if (isPromptOrInvalidText(profile.certifications)) {
-      updateProfile('certifications', '');
-      changed = true;
-    }
-    if (changed) {
-      try {
-        const saved = localStorage.getItem('cp_profile');
-        if (saved) {
-          const parsed = JSON.parse(saved);
-          if (isPromptOrInvalidText(parsed.branch, true)) parsed.branch = '';
-          if (isPromptOrInvalidText(parsed.fullName, true)) parsed.fullName = safeDefaultName;
-          if (isPromptOrInvalidText(parsed.collegeName, true)) parsed.collegeName = '';
-          if (isPromptOrInvalidText(parsed.achievements)) parsed.achievements = '';
-          if (isPromptOrInvalidText(parsed.certifications)) parsed.certifications = '';
-          localStorage.setItem('cp_profile', JSON.stringify(parsed));
-        }
-      } catch (e) {}
-    }
-  }, [profile.branch, profile.fullName, profile.collegeName, profile.achievements, profile.certifications]);
+  }, [profile.branch, profile.fullName, profile.collegeName, profile.achievements]);
+
 
   const isFirstSemester = Number(profile.currentSemester) === 1;
   const isResumeRequired = Number(profile.currentSemester) >= 2;
@@ -292,15 +274,20 @@ export default function StudentProfile({ setActiveTab }) {
     }
   };
 
-  // Resume upload handler
-  const onResumeFileChange = (e) => {
+  // Resume upload & action handlers
+  const onResumeFileChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      if (file.type !== 'application/pdf' && !file.name.endsWith('.pdf')) {
-        showToast('Error: Only PDF resumes are accepted', 'error');
+      const ext = file.name.split('.').pop().toLowerCase();
+      if (!['pdf', 'doc', 'docx'].includes(ext)) {
+        showToast('Error: Resume must be a PDF, DOC, or DOCX file.', 'error');
         return;
       }
-      const ok = handleResumeUpload(file);
+      if (file.size > 5 * 1024 * 1024) {
+        showToast('Error: Resume file size must be within 5 MB.', 'error');
+        return;
+      }
+      const ok = await handleResumeUpload(file);
       if (ok) {
         setErrors(prev => {
           const next = { ...prev };
@@ -311,17 +298,52 @@ export default function StudentProfile({ setActiveTab }) {
     }
   };
 
-  const handlePhotoChange = (e) => {
+  const handleViewResumeClick = async () => {
+    try {
+      await apiService.viewResume('me');
+    } catch (err) {
+      showToast('Error viewing resume: ' + err.message, 'error');
+    }
+  };
+
+  const handleDownloadResumeClick = async () => {
+    try {
+      await apiService.downloadResume('me', profile.resume?.name || 'resume.pdf');
+    } catch (err) {
+      showToast('Error downloading resume: ' + err.message, 'error');
+    }
+  };
+
+  const handleDeleteResumeClick = async () => {
+    if (window.confirm('Are you sure you want to delete your resume?')) {
+      const ok = await handleResumeDelete();
+      if (ok && isResumeRequired && hasAttemptedSubmit) {
+        setErrors(prev => ({ ...prev, resume: 'Please upload your resume before saving your profile.' }));
+      }
+    }
+  };
+
+  const handlePhotoChange = async (e) => {
     const file = e.target.files?.[0];
     if (file) {
-      const fakeUrl = URL.createObjectURL(file);
-      updateProfile('photoUrl', fakeUrl);
-      showToast('Profile photo updated!', 'success');
+      try {
+        // Show loading toast or state if needed, but since we don't have a specific loading state for avatar,
+        // we'll just try to upload it directly.
+        const res = await import('../../services/api').then(m => m.apiService.uploadAvatar(file));
+        if (res && res.success) {
+          updateProfile('photoUrl', res.url);
+          showToast('Profile photo updated successfully!', 'success');
+        } else {
+          showToast('Failed to upload photo: ' + (res?.message || 'Unknown error'), 'error');
+        }
+      } catch (err) {
+        showToast('Error uploading photo: ' + err.message, 'error');
+      }
     }
   };
 
   // Save Profile with full validation check
-  const handleSaveAndProceed = () => {
+  const handleSaveAndProceed = async () => {
     setHasAttemptedSubmit(true);
     const validationErrors = validateAll(profile);
 
@@ -345,11 +367,9 @@ export default function StudentProfile({ setActiveTab }) {
     // All validations pass!
     setErrors({});
     setShowTopNotification(false);
-    saveProfile(profile);
-
-    if (setActiveTab) {
-      setActiveTab('dashboard');
-      window.location.hash = 'dashboard';
+    const ok = await saveProfile(profile);
+    if (ok) {
+      showToast('Profile changes saved successfully!', 'success');
     }
   };
 
@@ -366,10 +386,10 @@ export default function StudentProfile({ setActiveTab }) {
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold text-slate-900 dark:text-white tracking-tight">
-            Student Profile Setup
+            Profile Management
           </h1>
           <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
-            Complete your basic, academic, and technical details. Saving your profile opens your personalized dashboard.
+            View and update your personal, academic, skill, and career details.
           </p>
         </div>
 
@@ -833,7 +853,7 @@ export default function StudentProfile({ setActiveTab }) {
                 : 'border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50'
             }`}
           >
-            {profile.skills && profile.skills.map((skill) => (
+            {Array.isArray(profile?.skills) && profile.skills.map((skill) => (
               <span
                 key={skill}
                 className="inline-flex items-center gap-1.5 px-3 py-1 rounded-xl text-xs font-semibold bg-brand-500/10 text-brand-500 border border-brand-500/20 shadow-sm"
@@ -894,11 +914,11 @@ export default function StudentProfile({ setActiveTab }) {
           </div>
         </div>
 
-        {/* Resume Upload Logic (Semester Based) */}
+        {/* Resume Upload & Secure Document Management */}
         <div id="field-resume">
           <div className="flex items-center justify-between mb-2">
             <label className="text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider flex items-center gap-2">
-              <span>Resume Upload</span>
+              <span>Resume</span>
               {isResumeRequired ? (
                 <span className="text-[10px] font-bold px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-500 border border-rose-500/20">
                   Required for Semester 2 and above *
@@ -909,7 +929,7 @@ export default function StudentProfile({ setActiveTab }) {
                 </span>
               )}
             </label>
-            <span className="text-xs text-slate-400">Accepted format: PDF only</span>
+            <span className="text-xs text-slate-400">Accepted formats: PDF, DOC, DOCX (Max 5 MB)</span>
           </div>
 
           {/* First Semester Explanatory Notice */}
@@ -921,65 +941,83 @@ export default function StudentProfile({ setActiveTab }) {
           )}
 
           {profile.resume ? (
-            <div className="p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 flex items-center justify-between gap-4">
+            <div className="p-4 rounded-2xl border border-emerald-500/30 bg-emerald-500/5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
               <div className="flex items-center gap-3">
-                <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500">
+                <div className="p-3 rounded-xl bg-emerald-500/10 text-emerald-500 shrink-0">
                   <FileText className="w-6 h-6" />
                 </div>
                 <div>
-                  <p className="text-sm font-bold text-slate-900 dark:text-white">
-                    {profile.resume.name}
+                  <p className="text-xs font-semibold text-emerald-600 dark:text-emerald-400 uppercase tracking-wider">
+                    Resume uploaded
                   </p>
-                  <p className="text-xs text-slate-500 dark:text-slate-400">
-                    {profile.resume.size} • Uploaded {profile.resume.updatedAt} • ATS Score: {profile.resume.atsScore}%
+                  <p className="text-sm font-bold text-slate-900 dark:text-white mt-0.5">
+                    {profile.resume.name || 'resume.pdf'}
+                  </p>
+                  <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                    Uploaded {profile.resume.uploadedAt || 'Recently'}
                   </p>
                 </div>
               </div>
-              <div className="flex items-center gap-2">
+
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={handleViewResumeClick}
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold text-brand-600 dark:text-brand-400 bg-brand-500/10 hover:bg-brand-500/20 border border-brand-500/30 flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Eye className="w-3.5 h-3.5" />
+                  <span>View Resume</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={handleDownloadResumeClick}
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
+                >
+                  <Download className="w-3.5 h-3.5" />
+                  <span>Download Resume</span>
+                </button>
+
                 <button
                   type="button"
                   onClick={() => fileInputRef.current?.click()}
-                  className="px-3 py-1.5 rounded-lg text-xs font-medium text-slate-700 dark:text-slate-200 bg-white/70 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 cursor-pointer"
+                  className="px-3.5 py-2 rounded-xl text-xs font-semibold text-slate-700 dark:text-slate-200 bg-white/80 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 hover:bg-slate-100 dark:hover:bg-slate-700 flex items-center gap-1.5 cursor-pointer transition-colors"
                 >
-                  Replace PDF
+                  <RefreshCw className="w-3.5 h-3.5 text-slate-500" />
+                  <span>Replace Resume</span>
                 </button>
+
                 <button
                   type="button"
-                  onClick={() => {
-                    updateProfile('resume', null);
-                    if (isResumeRequired && hasAttemptedSubmit) {
-                      setErrors(prev => ({ ...prev, resume: 'Please upload your resume before saving your profile.' }));
-                    }
-                  }}
-                  className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 cursor-pointer"
-                  title="Remove resume"
+                  onClick={handleDeleteResumeClick}
+                  className="p-2 rounded-xl text-slate-400 hover:text-rose-500 hover:bg-rose-500/10 transition-colors cursor-pointer"
+                  title="Delete Resume"
                 >
                   <Trash2 className="w-4 h-4" />
                 </button>
               </div>
             </div>
           ) : (
-            <div
-              onClick={() => fileInputRef.current?.click()}
-              className={`border-2 border-dashed rounded-2xl p-6 text-center cursor-pointer transition-colors group ${
-                errors.resume
-                  ? 'border-rose-500 bg-rose-50/20 dark:bg-rose-950/20 hover:border-rose-600'
-                  : 'border-slate-300 dark:border-slate-700 hover:border-brand-500 bg-white/40 dark:bg-slate-900/40'
-              }`}
-            >
-              <Upload
-                className={`w-8 h-8 mx-auto transition-colors mb-2 ${
-                  errors.resume ? 'text-rose-500' : 'text-slate-400 group-hover:text-brand-500'
-                }`}
-              />
-              <p className="text-sm font-semibold text-slate-700 dark:text-slate-200">
-                Click to upload your Resume (PDF)
-              </p>
-              <p className="text-xs text-slate-400 mt-1">
-                {isResumeRequired
-                  ? 'Mandatory for candidate calibration in Semester 2 and above.'
-                  : 'Resume upload is optional for first semester students.'}
-              </p>
+            <div className="p-6 border-2 border-dashed border-slate-300 dark:border-slate-700 rounded-2xl text-center space-y-3 bg-white/40 dark:bg-slate-900/40">
+              <div className="w-12 h-12 mx-auto rounded-2xl bg-slate-100 dark:bg-slate-800 text-slate-400 flex items-center justify-center">
+                <FileText className="w-6 h-6" />
+              </div>
+              <div>
+                <p className="text-sm font-bold text-slate-900 dark:text-white">
+                  No resume uploaded yet.
+                </p>
+                <p className="text-xs text-slate-400 mt-1">
+                  Upload your resume in PDF, DOC, or DOCX format (Max size 5 MB).
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-glow inline-flex items-center gap-2 cursor-pointer transition-all"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Upload Resume</span>
+              </button>
             </div>
           )}
 
@@ -993,7 +1031,7 @@ export default function StudentProfile({ setActiveTab }) {
           <input
             ref={fileInputRef}
             type="file"
-            accept=".pdf,application/pdf"
+            accept=".pdf,.doc,.docx,application/pdf,application/msword,application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             className="hidden"
             onChange={onResumeFileChange}
           />
@@ -1078,7 +1116,7 @@ export default function StudentProfile({ setActiveTab }) {
               className="w-full sm:w-auto px-6 py-2.5 rounded-xl font-bold text-xs text-white bg-gradient-to-r from-brand-600 via-indigo-600 to-purple-600 hover:opacity-95 shadow-glow transition-all flex items-center justify-center gap-2 cursor-pointer"
             >
               <CheckCircle2 className="w-4 h-4" />
-              <span>Save Profile</span>
+              <span>Save Changes</span>
             </button>
           </div>
         </div>

@@ -2,12 +2,8 @@ import React, { useMemo } from 'react';
 import { useCareer } from '../../context/CareerContext';
 import { useProfile } from '../../context/ProfileContext';
 import CircularProgress from '../common/CircularProgress';
-import {
-  RECOMMENDED_PROJECTS,
-  RECOMMENDED_INTERNSHIPS,
-  RECOMMENDED_CERTIFICATES,
-  LEARNING_RESOURCES
-} from '../../data/mockData';
+// Using live API data instead of mock arrays
+import { apiService } from '../../services/api';
 import {
   LineChart,
   Target,
@@ -26,12 +22,34 @@ import {
   FolderGit2,
   ExternalLink,
   Clock,
-  ArrowUpRight
+  ArrowUpRight,
+  RefreshCw,
+  Info
 } from 'lucide-react';
+
 
 export default function SkillInsights({ setActiveTab }) {
   const { currentRole, currentRoadmap, roadmapStats, skillComparison, selectDreamRole } = useCareer();
   const { profile } = useProfile();
+  
+  const [learningResources, setLearningResources] = React.useState([]);
+  const [learningProjects, setLearningProjects] = React.useState([]);
+  const [learningInternships, setLearningInternships] = React.useState([]);
+  const [learningCertificates, setLearningCertificates] = React.useState([]);
+
+  React.useEffect(() => {
+    Promise.all([
+      apiService.getPublicResources().catch(() => ({ success: true, data: [] })),
+      apiService.getProjects().catch(() => ({ success: true, data: [] })),
+      apiService.getInternships().catch(() => ({ success: true, internships: [] })),
+      apiService.getCertificates().catch(() => ({ success: true, data: [] }))
+    ]).then(([resRes, projRes, intRes, certRes]) => {
+      if (resRes.success) setLearningResources(resRes.data || []);
+      if (projRes.success) setLearningProjects(projRes.data || projRes.projects || []);
+      if (intRes.success) setLearningInternships(intRes.internships || intRes.data || []);
+      if (certRes.success) setLearningCertificates(certRes.data || certRes.certificates || []);
+    });
+  }, []);
 
   const {
     hasSkills,
@@ -75,54 +93,54 @@ export default function SkillInsights({ setActiveTab }) {
 
       const appliedId = Object.keys(applied)[0];
       if (appliedId) {
-        const found = RECOMMENDED_INTERNSHIPS.find(i => i.id === appliedId);
+        const found = learningInternships.find(i => i.id === appliedId);
         if (found) return { ...found, role: found.role, company: found.company, duration: found.duration, status: 'In Progress' };
       }
       if (saved.length > 0) {
-        const found = RECOMMENDED_INTERNSHIPS.find(i => i.id === saved[0]);
+        const found = learningInternships.find(i => i.id === saved[0]);
         if (found) return { ...found, role: found.role, company: found.company, duration: found.duration, status: 'In Progress' };
       }
-      if (currentRole) {
-        const matched = RECOMMENDED_INTERNSHIPS[0];
+      if (currentRole && learningInternships.length > 0) {
+        const matched = learningInternships[0];
         if (matched) return { ...matched, role: matched.role || 'Frontend Developer Intern', company: matched.company, duration: matched.duration, status: 'In Progress' };
       }
     } catch (e) {}
     return null;
-  }, [currentRole]);
+  }, [currentRole, learningInternships]);
 
   // 3. Current Certificates
   const activeCertificates = useMemo(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('cp_saved_certificates') || '[]');
       if (saved.length > 0) {
-        return RECOMMENDED_CERTIFICATES.filter(c => saved.includes(c.id)).map(c => ({
-          name: c.name,
+        return learningCertificates.filter(c => saved.includes(c.id)).map(c => ({
+          name: c.title || c.name,
           provider: c.provider,
           progressStatus: '60% Completed'
         }));
       }
-      if (currentRole) {
+      if (currentRole && learningCertificates.length > 0) {
         return [
           {
-            name: RECOMMENDED_CERTIFICATES[0]?.name || 'Google Data Analytics',
-            provider: RECOMMENDED_CERTIFICATES[0]?.provider || 'Google / Coursera',
+            name: learningCertificates[0]?.title || learningCertificates[0]?.name || 'Google Data Analytics',
+            provider: learningCertificates[0]?.provider || 'Google / Coursera',
             progressStatus: '60% Completed'
           }
         ];
       }
     } catch (e) {}
     return [];
-  }, [currentRole]);
+  }, [currentRole, learningCertificates]);
 
   // 4. Current Resources
   const activeResources = useMemo(() => {
     try {
       const saved = JSON.parse(localStorage.getItem('cp_saved_resources') || '[]');
       if (saved.length > 0) {
-        return LEARNING_RESOURCES.filter(r => saved.includes(r.id)).slice(0, 3);
+        return learningResources.filter(r => saved.includes(r.id)).slice(0, 3);
       }
       if (currentRole) {
-        return LEARNING_RESOURCES.slice(0, 2);
+        return learningResources.slice(0, 2);
       }
     } catch (e) {}
     return [];
@@ -133,24 +151,24 @@ export default function SkillInsights({ setActiveTab }) {
     try {
       const saved = JSON.parse(localStorage.getItem('cp_saved_projects') || '[]');
       if (saved.length > 0) {
-        return RECOMMENDED_PROJECTS.filter(p => saved.includes(p.id)).map(p => ({
+        return learningProjects.filter(p => saved.includes(p.id)).map(p => ({
           title: p.title,
           category: p.category || `${p.difficulty} Capstone`,
           progressStatus: '70% Completed'
         }));
       }
-      if (currentRole) {
+      if (currentRole && learningProjects.length > 0) {
         return [
           {
-            title: RECOMMENDED_PROJECTS[0]?.title || 'CareerPilot AI',
-            category: RECOMMENDED_PROJECTS[0]?.category || 'Full Stack System',
+            title: learningProjects[0]?.title || 'CareerPilot',
+            category: learningProjects[0]?.category || 'Full Stack System',
             progressStatus: '70% Completed'
           }
         ];
       }
     } catch (e) {}
     return [];
-  }, [currentRole]);
+  }, [currentRole, learningProjects]);
 
   const hasActiveLearning = !!(activeRoadmap || activeInternship || activeCertificates.length > 0 || activeResources.length > 0 || activeProjects.length > 0);
 
@@ -221,6 +239,218 @@ export default function SkillInsights({ setActiveTab }) {
       ? 'bg-amber-500/10 text-amber-500 border-amber-500/20'
       : 'bg-emerald-500/10 text-emerald-500 border-emerald-500/20';
 
+function MLPlacementWidget() {
+  const [mlData, setMlData] = React.useState(null);
+  const [loading, setLoading] = React.useState(true);
+
+  const fetchPrediction = () => {
+    setLoading(true);
+    apiService.getMLPrediction()
+      .then(res => {
+        setMlData(res);
+        setLoading(false);
+      })
+      .catch(() => {
+        setMlData({
+          success: false,
+          status: 'service_unavailable',
+          message: 'Placement prediction ML microservice is temporarily offline.'
+        });
+        setLoading(false);
+      });
+  };
+
+  React.useEffect(() => {
+    fetchPrediction();
+  }, []);
+
+  return (
+    <div className="glass-card rounded-3xl p-6 sm:p-8 border border-indigo-500/20 bg-indigo-500/5 space-y-6 relative overflow-hidden">
+      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border-b border-slate-200/80 dark:border-slate-800/80 pb-4">
+        <div>
+          <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-indigo-500/10 text-indigo-500 border border-indigo-500/20 mb-2">
+            <Sparkles className="w-3.5 h-3.5" />
+            <span>Machine Learning Engine</span>
+          </div>
+          <h2 className="text-xl font-extrabold text-slate-900 dark:text-white">
+            Placement Readiness Probability Prediction
+          </h2>
+          <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+            Statistical prediction calculated by trained Machine Learning model using authentic student profile metrics.
+          </p>
+        </div>
+
+        <button
+          onClick={fetchPrediction}
+          disabled={loading}
+          className="px-4 py-2 rounded-xl text-xs font-semibold text-indigo-600 dark:text-indigo-400 bg-indigo-500/10 hover:bg-indigo-500/20 border border-indigo-500/20 transition-all flex items-center gap-2 cursor-pointer self-start sm:self-auto"
+        >
+          {loading ? (
+            <span className="inline-block w-3.5 h-3.5 border-2 border-indigo-500/30 border-t-indigo-500 rounded-full animate-spin" />
+          ) : (
+            <>
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Recalculate Prediction</span>
+            </>
+          )}
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="py-8 text-center text-xs text-slate-400">
+          Evaluating student metrics through Machine Learning model...
+        </div>
+      ) : mlData?.status === 'insufficient_data' ? (
+        <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-500/20 text-xs text-amber-600 dark:text-amber-400 space-y-2">
+          <div className="flex items-center gap-2 font-bold">
+            <AlertTriangle className="w-4 h-4" />
+            <span>Insufficient Student Profile Data for Prediction</span>
+          </div>
+          <p>{mlData.message}</p>
+          {Array.isArray(mlData?.missing_fields) && mlData.missing_fields.length > 0 && (
+            <div className="flex flex-wrap gap-1.5 pt-1">
+              {mlData.missing_fields.map((f, i) => (
+                <span key={i} className="px-2.5 py-0.5 rounded-md bg-amber-500/20 text-amber-700 dark:text-amber-300 text-[11px] font-semibold">
+                  Missing: {f}
+                </span>
+              ))}
+            </div>
+          )}
+        </div>
+      ) : mlData?.status === 'model_not_trained' ? (
+        <div className="p-4 rounded-2xl bg-blue-500/10 border border-blue-500/20 text-xs text-blue-600 dark:text-blue-400 space-y-2">
+          <div className="flex items-center gap-2 font-bold">
+            <Info className="w-4 h-4" />
+            <span>ML Model Pipeline Initialized</span>
+          </div>
+          <p>{mlData?.message || 'Model initialized.'}</p>
+        </div>
+      ) : mlData?.status === 'service_unavailable' ? (
+        <div className="p-4 rounded-2xl bg-slate-500/10 border border-slate-500/20 text-xs text-slate-500 dark:text-slate-400">
+          Placement prediction ML microservice is temporarily offline.
+        </div>
+      ) : mlData?.probability !== null && mlData?.probability !== undefined ? (
+        <div className="space-y-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 text-center">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Model Probability Score
+              </span>
+              <span className="text-3xl font-black text-brand-500">
+                {(Number(mlData.probability) * 100).toFixed(1)}%
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 text-center">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Readiness Category
+              </span>
+              <span className={`text-base font-bold ${
+                mlData.status === 'High Readiness' ? 'text-emerald-500' : mlData.status === 'Moderate Readiness' ? 'text-amber-500' : 'text-rose-500'
+              }`}>
+                {mlData.status}
+              </span>
+            </div>
+
+            <div className="p-4 rounded-2xl bg-white/50 dark:bg-slate-900/50 border border-slate-200/80 dark:border-slate-800 text-center">
+              <span className="text-[11px] font-bold text-slate-400 uppercase tracking-wider block mb-1">
+                Model Engine Version
+              </span>
+              <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                {mlData.selected_model || 'LogisticRegression'} v{mlData.model_version || '1.0.0'}
+              </span>
+            </div>
+          </div>
+
+          {/* Model-Driven XAI Feature Explainability */}
+          {mlData?.explanation && (mlData.explanation.positive_factors?.length > 0 || mlData.explanation.improvement_areas?.length > 0) ? (
+            <div className="space-y-4 pt-2">
+              <div className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4 text-indigo-500" />
+                <h4 className="text-xs font-extrabold uppercase tracking-wider text-slate-800 dark:text-slate-200">
+                  Model Explainability (XAI) — Feature Contributions
+                </h4>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                {/* Positive Contributing Factors */}
+                {Array.isArray(mlData.explanation.positive_factors) && mlData.explanation.positive_factors.length > 0 && (
+                  <div className="p-4 rounded-2xl bg-emerald-500/5 border border-emerald-500/20 space-y-2.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400 block">
+                      Positive Contributing Factors
+                    </span>
+                    <div className="space-y-2">
+                      {mlData.explanation.positive_factors.map((f, idx) => (
+                        <div key={idx} className="p-2.5 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-emerald-500/10 flex items-center justify-between text-xs">
+                          <div>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{f.feature}</span>
+                            <span className="text-slate-400 text-[11px] ml-1.5">({f.value})</span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/10 text-emerald-600 border border-emerald-500/20">
+                            {f.impact}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {/* Key Areas Needing Improvement */}
+                {Array.isArray(mlData.explanation.improvement_areas) && mlData.explanation.improvement_areas.length > 0 && (
+                  <div className="p-4 rounded-2xl bg-amber-500/5 border border-amber-500/20 space-y-2.5">
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400 block">
+                      Recommended Improvement Areas
+                    </span>
+                    <div className="space-y-2">
+                      {mlData.explanation.improvement_areas.map((f, idx) => (
+                        <div key={idx} className="p-2.5 rounded-xl bg-white/60 dark:bg-slate-900/60 border border-amber-500/10 flex items-center justify-between text-xs">
+                          <div>
+                            <span className="font-semibold text-slate-800 dark:text-slate-200">{f.feature}</span>
+                            <span className="text-slate-400 text-[11px] ml-1.5">({f.value})</span>
+                          </div>
+                          <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-amber-500/10 text-amber-600 border border-amber-500/20">
+                            {f.impact}
+                          </span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+          ) : Array.isArray(mlData?.contributions) && mlData.contributions.length > 0 ? (
+            <div className="space-y-3">
+              <h4 className="text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                Top Contributing Prediction Factors
+              </h4>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                {mlData.contributions.map((c, idx) => (
+                  <div key={idx} className="p-3 rounded-xl bg-white/40 dark:bg-slate-900/40 border border-slate-200/60 dark:border-slate-800/60 flex items-center justify-between text-xs">
+                    <div>
+                      <span className="font-semibold text-slate-800 dark:text-slate-200">{c.feature}</span>
+                      <span className="text-slate-400 ml-2">({c.value})</span>
+                    </div>
+                    <span className={`px-2 py-0.5 rounded text-[10px] font-bold ${
+                      c.impact === 'High' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-amber-500/10 text-amber-500'
+                    }`}>
+                      {c.impact} Impact
+                    </span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          ) : null}
+
+          {/* Legal Disclaimer */}
+          <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-900/80 text-[11px] text-slate-500 dark:text-slate-400 leading-relaxed border border-slate-200/50 dark:border-slate-800/50">
+            <strong>Disclaimer:</strong> {mlData.disclaimer || "ML prediction is a statistical estimate based on available student profile features and historical placement data. It is not a placement guarantee."}
+          </div>
+        </div>
+      ) : null}
+    </div>
+  );
+}
+
   return (
     <div className="space-y-6 pb-12 max-w-5xl mx-auto">
       {/* Header Banner */}
@@ -255,6 +485,10 @@ export default function SkillInsights({ setActiveTab }) {
           </div>
         </div>
       </div>
+
+      {/* Real Machine Learning Placement Prediction Engine Widget */}
+      <MLPlacementWidget />
+
 
       {/* Dream Role Match Card (Match Percentage & Circular Progress) */}
       <div className="glass-card rounded-3xl p-6 sm:p-8 border border-slate-200/80 dark:border-white/10 flex flex-col sm:flex-row items-center justify-between gap-6">

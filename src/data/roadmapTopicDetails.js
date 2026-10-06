@@ -343,7 +343,7 @@ const RAW_CATALOG = {
     ],
     advanced: [
       {
-        title: 'CareerPilot AI – Intelligent Career Acceleration Ecosystem',
+        title: 'CareerPilot – Intelligent Career Acceleration Ecosystem',
         difficulty: 'Advanced',
         duration: '5-6 Weeks',
         tech: ['React 19', 'Vite', 'Tailwind CSS', 'Vercel AI SDK', 'PostgreSQL'],

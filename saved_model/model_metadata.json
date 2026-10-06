@@ -1,0 +1,108 @@
+{
+  "model_version": "1.0.0",
+  "selected_model": "LogisticRegression",
+  "metrics": {
+    "accuracy": 0.9708,
+    "precision": 0.9825,
+    "recall": 0.9868,
+    "f1_score": 0.9846,
+    "roc_auc": 0.9892,
+    "confusion_matrix": [
+      [
+        9,
+        4
+      ],
+      [
+        3,
+        224
+      ]
+    ]
+  },
+  "all_candidate_metrics": {
+    "LogisticRegression": {
+      "accuracy": 0.9708,
+      "precision": 0.9825,
+      "recall": 0.9868,
+      "f1_score": 0.9846,
+      "roc_auc": 0.9892,
+      "confusion_matrix": [
+        [
+          9,
+          4
+        ],
+        [
+          3,
+          224
+        ]
+      ]
+    },
+    "DecisionTree": {
+      "accuracy": 0.9333,
+      "precision": 0.9489,
+      "recall": 0.9824,
+      "f1_score": 0.9654,
+      "roc_auc": 0.7928,
+      "confusion_matrix": [
+        [
+          1,
+          12
+        ],
+        [
+          4,
+          223
+        ]
+      ]
+    },
+    "RandomForest": {
+      "accuracy": 0.9458,
+      "precision": 0.9458,
+      "recall": 1.0,
+      "f1_score": 0.9722,
+      "roc_auc": 0.977,
+      "confusion_matrix": [
+        [
+          0,
+          13
+        ],
+        [
+          0,
+          227
+        ]
+      ]
+    },
+    "GradientBoosting": {
+      "accuracy": 0.9542,
+      "precision": 0.9737,
+      "recall": 0.978,
+      "f1_score": 0.9758,
+      "roc_auc": 0.9709,
+      "confusion_matrix": [
+        [
+          7,
+          6
+        ],
+        [
+          5,
+          222
+        ]
+      ]
+    }
+  },
+  "train_samples": 960,
+  "test_samples": 240,
+  "numerical_features": [
+    "cgpa",
+    "semester",
+    "graduation_year",
+    "skills_count",
+    "projects_count",
+    "certificates_count",
+    "internships_count",
+    "readiness_score"
+  ],
+  "categorical_features": [
+    "branch",
+    "academic_year"
+  ],
+  "timestamp": "2026-10-01T13:11:41.474989"
+}

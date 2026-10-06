@@ -1,6 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import { useToast } from './ToastContext';
-import { apiService } from '../services/api';
+import apiService from '../services/api';
 
 const EventsContext = createContext();
 
@@ -18,9 +18,16 @@ export function EventsProvider({ children }) {
   const fetchEventsData = async () => {
     setLoading(true);
     try {
-      const res = await apiService.getEvents();
-      if (res.success) {
-        setEvents(res.events || []);
+      const [eventsRes, collegesRes] = await Promise.all([
+        apiService.getEvents(),
+        apiService.getColleges ? apiService.getColleges().catch(() => ({ success: true, data: [] })) : Promise.resolve({ success: true, data: [] })
+      ]);
+
+      if (eventsRes.success) {
+        setEvents(eventsRes.events || []);
+      }
+      if (collegesRes.success) {
+        setColleges(collegesRes.data || []);
       }
     } catch (err) {
       console.warn('Events sync error:', err.message);
@@ -35,14 +42,35 @@ export function EventsProvider({ children }) {
 
   const addEvent = async (eventData) => {
     try {
-      const res = await apiService.createEvent(eventData);
+      const payload = {
+        title: eventData.name,
+        organizer: eventData.organizer || eventData.collegeName || 'Placement Cell',
+        event_date: eventData.eventDate,
+        location: eventData.venue || 'Campus',
+        event_url: eventData.regUrl || '',
+        description: eventData.description || ''
+      };
+      const res = await apiService.createEvent(payload);
       if (res.success) {
-        showToast(`Event "${eventData.title}" created successfully!`, 'success');
+        showToast(`Event "${eventData.name}" created successfully!`, 'success');
         fetchEventsData();
         return res.event;
       }
     } catch (err) {
       showToast(err.message || 'Failed to create event', 'error');
+    }
+  };
+
+  const addCollege = async (collegeData) => {
+    try {
+      const res = await apiService.createCollege(collegeData);
+      if (res.success) {
+        showToast(`College "${collegeData.name}" created successfully!`, 'success');
+        fetchEventsData();
+        return res.data;
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to create college', 'error');
     }
   };
 
@@ -65,6 +93,7 @@ export function EventsProvider({ children }) {
         events,
         savedEventIds,
         addEvent,
+        addCollege,
         toggleSaveEvent,
         isEventSaved,
         eventTypes: EVENT_TYPES,

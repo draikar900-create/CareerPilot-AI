@@ -47,7 +47,7 @@ export class ErrorBoundary extends React.Component {
                 {this.props.moduleTitle ? `${this.props.moduleTitle} Encountered an Issue` : 'Something Went Wrong'}
               </h3>
               <p className="text-xs text-slate-500 dark:text-slate-400 max-w-sm mx-auto leading-relaxed">
-                CareerPilot AI caught an unexpected component error. Your data is preserved safely.
+                CareerPilot caught an unexpected component error. Your data is preserved safely.
               </p>
             </div>
 
@@ -61,7 +61,7 @@ export class ErrorBoundary extends React.Component {
               <button
                 type="button"
                 onClick={this.handleReset}
-                className="px-4 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-glow flex items-center gap-1.5 transition-all"
+                className="px-4 py-2 rounded-xl text-xs font-semibold text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 shadow-sm flex items-center gap-1.5 transition-colors"
               >
                 <RotateCcw className="w-3.5 h-3.5" />
                 <span>Try Again</span>

@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
-import { RECOMMENDED_PROJECTS } from '../../data/mockData';
+// import { RECOMMENDED_PROJECTS } from '../../data/mockData';
 import { useCareer } from '../../context/CareerContext';
 import { useToast } from '../../context/ToastContext';
 import Modal from '../common/Modal';
+import { apiService } from '../../services/api';
 import {
   FolderGit2,
   Clock,
@@ -20,6 +21,7 @@ export default function Projects() {
   const { currentRole } = useCareer();
   const { showToast } = useToast();
 
+  const [projects, setProjects] = useState([]);
   const [activeSection, setActiveSection] = useState('all'); // 'all' | 'saved'
   const [selectedProject, setSelectedProject] = useState(null);
   const [filterDifficulty, setFilterDifficulty] = useState('All');
@@ -32,6 +34,14 @@ export default function Projects() {
       return [];
     }
   });
+
+  useEffect(() => {
+    import('../../services/api').then(({ apiService }) => {
+      apiService.getProjects().then(res => {
+        if (res.success) setProjects(res.data || res.projects || []);
+      }).catch(console.error);
+    });
+  }, []);
 
   useEffect(() => {
     try {
@@ -52,8 +62,8 @@ export default function Projects() {
   const difficulties = ['All', 'Beginner', 'Intermediate', 'Advanced'];
 
   const baseList = activeSection === 'saved'
-    ? RECOMMENDED_PROJECTS.filter(p => savedProjectIds.includes(p.id))
-    : RECOMMENDED_PROJECTS;
+    ? projects.filter(p => savedProjectIds.includes(p.id))
+    : projects;
 
   const filteredProjects = baseList.filter((p) => {
     if (filterDifficulty === 'All') return true;
@@ -94,7 +104,7 @@ export default function Projects() {
             <FolderGit2 className="w-3.5 h-3.5" />
             <span>All Projects</span>
             <span className={`text-[10px] px-2 py-0.5 rounded-full ${activeSection === 'all' ? 'bg-white/20' : 'bg-slate-200 dark:bg-slate-800'}`}>
-              {RECOMMENDED_PROJECTS.length}
+              {projects.length}
             </span>
           </button>
 
@@ -210,7 +220,7 @@ export default function Projects() {
                       Skills Covered
                     </span>
                     <div className="flex flex-wrap gap-1.5">
-                      {proj.skills.map((s) => (
+                      {(proj.skills || proj.technologies || []).map((s) => (
                         <span
                           key={s}
                           className="text-[11px] font-semibold px-2.5 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
@@ -244,7 +254,7 @@ export default function Projects() {
                     title={isSaved ? 'Click to remove from saved' : 'Save project'}
                   >
                     <Bookmark className={`w-3.5 h-3.5 ${isSaved ? 'fill-current' : ''}`} />
-                    <span>{isSaved ? 'Saved ✓' : 'Save'}</span>
+                    <span>{isSaved ? 'Saved' : 'Save'}</span>
                   </button>
                 </div>
               </div>
@@ -278,15 +288,17 @@ export default function Projects() {
             </p>
 
             {/* Architecture Overview */}
-            <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
-              <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
-                <Layers className="w-3.5 h-3.5 text-cyan-400" />
-                System Architecture Stack
-              </span>
-              <p className="text-xs font-mono text-brand-500 dark:text-brand-400 break-words">
-                {selectedProject.architecture}
-              </p>
-            </div>
+            {selectedProject.architecture && (
+              <div className="p-4 rounded-2xl bg-slate-50 dark:bg-slate-900 border border-slate-200 dark:border-slate-800 space-y-2">
+                <span className="text-xs font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1.5">
+                  <Layers className="w-3.5 h-3.5 text-cyan-400" />
+                  System Architecture Stack
+                </span>
+                <p className="text-xs font-mono text-brand-500 dark:text-brand-400 break-words">
+                  {selectedProject.architecture}
+                </p>
+              </div>
+            )}
 
             {/* Skills */}
             <div>
@@ -294,7 +306,7 @@ export default function Projects() {
                 Technologies & Tools Practiced
               </span>
               <div className="flex flex-wrap gap-2">
-                {selectedProject.skills.map((s) => (
+                {(selectedProject.skills || selectedProject.technologies || []).map((s) => (
                   <span
                     key={s}
                     className="text-xs font-semibold px-3 py-1 rounded-xl bg-brand-500/10 text-brand-500 border border-brand-500/20"
@@ -316,19 +328,21 @@ export default function Projects() {
                 }`}
               >
                 <Bookmark className={`w-3.5 h-3.5 ${savedProjectIds.includes(selectedProject.id) ? 'fill-current' : ''}`} />
-                <span>{savedProjectIds.includes(selectedProject.id) ? 'Saved ✓' : 'Save Project'}</span>
+                <span>{savedProjectIds.includes(selectedProject.id) ? 'Saved' : 'Save Project'}</span>
               </button>
 
               <div className="flex items-center gap-2">
-                <a
-                  href={selectedProject.github}
-                  target="_blank"
-                  rel="noreferrer"
-                  className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center gap-2"
-                >
-                  <GithubIcon className="w-4 h-4" />
-                  <span>View Starter Code</span>
-                </a>
+                {(selectedProject.github || selectedProject.github_template_url) && (
+                  <a
+                    href={selectedProject.github || selectedProject.github_template_url}
+                    target="_blank"
+                    rel="noreferrer"
+                    className="px-4 py-2 rounded-xl text-xs font-bold text-slate-700 dark:text-slate-200 bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 flex items-center gap-2"
+                  >
+                    <GithubIcon className="w-4 h-4" />
+                    <span>View Starter Code</span>
+                  </a>
+                )}
                 <button
                   onClick={() => {
                     showToast(`Project ${selectedProject.title} pinned to your active learning tasks!`, 'success');

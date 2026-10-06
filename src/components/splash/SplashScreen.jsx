@@ -53,10 +53,7 @@ export default function SplashScreen({ onComplete }) {
 
         {/* Brand Name & Tagline */}
         <h1 className="text-3xl sm:text-4xl font-extrabold tracking-tight text-slate-900 mb-2">
-          CareerPilot{' '}
-          <span className="bg-gradient-to-r from-indigo-600 via-purple-600 to-teal-500 bg-clip-text text-transparent">
-            AI
-          </span>
+          CareerPilot
         </h1>
         <p className="text-sm sm:text-base text-slate-600 font-medium tracking-wide max-w-xs mb-8">
           Your Intelligent Career Growth Companion

@@ -1,0 +1,46 @@
+[
+  {
+    "id": "aae6cd15-c3fb-4340-8061-f1307b8178fc",
+    "name": "Tech Corp 1791140345552",
+    "logo_url": "",
+    "website": "https://techcorp.example.com",
+    "description": "Leading Cloud Solutions Enterprise",
+    "industry": "Software & Cloud",
+    "location": "Bangalore, India",
+    "company_size": "100-500",
+    "created_at": "2026-10-04T18:59:06.222Z"
+  },
+  {
+    "id": "7a74ab96-00c9-4750-a388-dc6ec3cc2f54",
+    "name": "Tech Corp 1791139258538",
+    "logo_url": "",
+    "website": "https://techcorp.example.com",
+    "description": "Leading Cloud Solutions Enterprise",
+    "industry": "Software & Cloud",
+    "location": "Bangalore, India",
+    "company_size": "100-500",
+    "created_at": "2026-10-04T18:40:59.355Z"
+  },
+  {
+    "id": "cfcc32c2-e1b0-4727-9892-85860ef4ed72",
+    "name": "Tech Corp 1791137693670",
+    "logo_url": "",
+    "website": "https://techcorp.example.com",
+    "description": "Leading Cloud Solutions Enterprise",
+    "industry": "Software & Cloud",
+    "location": "Bangalore, India",
+    "company_size": "100-500",
+    "created_at": "2026-10-04T18:14:54.383Z"
+  },
+  {
+    "id": "0830b040-d579-40c1-a1fd-1a749dab62a8",
+    "name": "Tech Corp 1791137305271",
+    "logo_url": "",
+    "website": "https://techcorp.example.com",
+    "description": "Leading Cloud Solutions Enterprise",
+    "industry": "Software & Cloud",
+    "location": "Bangalore, India",
+    "company_size": "100-500",
+    "created_at": "2026-10-04T18:08:26.087Z"
+  }
+]

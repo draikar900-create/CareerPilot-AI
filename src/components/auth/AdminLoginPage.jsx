@@ -49,6 +49,15 @@ export default function AdminLoginPage({ onAdminLoginSuccess }) {
 
   return (
     <div className="w-full max-w-md mx-auto glass-card rounded-3xl p-8 shadow-2xl border border-indigo-200/80 dark:border-indigo-500/20 relative overflow-hidden animate-fade-in">
+      {/* Back to Landing Page link */}
+      <button
+        type="button"
+        onClick={() => setAuthView('landing')}
+        className="mb-4 text-xs font-semibold text-slate-500 dark:text-slate-400 hover:text-indigo-600 dark:hover:text-white transition-colors flex items-center gap-1 cursor-pointer"
+      >
+        <span>← Back to Home</span>
+      </button>
+
       {/* Top security glow badge */}
       <div className="text-center mb-8">
         <div className="inline-flex p-3 rounded-2xl bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 mb-3 ring-1 ring-indigo-500/20 shadow-inner">
@@ -117,10 +126,10 @@ export default function AdminLoginPage({ onAdminLoginSuccess }) {
         <button
           type="submit"
           disabled={loading}
-          className="w-full py-3 px-4 rounded-xl font-bold text-sm text-white bg-gradient-to-r from-indigo-600 via-purple-600 to-brand-600 hover:opacity-95 shadow-lg shadow-indigo-500/25 transition-all flex items-center justify-center gap-2 mt-2"
+          className="w-full py-3 px-4 rounded-xl font-medium text-sm text-white bg-zinc-900 hover:bg-zinc-800 dark:bg-zinc-100 dark:text-zinc-900 dark:hover:bg-zinc-200 transition-colors flex items-center justify-center gap-2 mt-2 disabled:opacity-50 shadow-sm"
         >
           {loading ? (
-            <span className="inline-block w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+            <span className="inline-block w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
           ) : (
             <>
               <span>Sign In</span>
@@ -131,14 +140,14 @@ export default function AdminLoginPage({ onAdminLoginSuccess }) {
       </form>
 
       {/* Redirect Options Back to Student Portal */}
-      <div className="mt-6 pt-5 border-t border-slate-200/80 dark:border-slate-800/80 text-center space-y-2">
+      <div className="mt-4 pt-4 border-t border-slate-200/80 dark:border-slate-800/80 text-center space-y-2">
         <div>
           <button
             type="button"
             onClick={() => setAuthView('login')}
             className="text-xs font-semibold text-brand-600 dark:text-brand-400 hover:underline"
           >
-            Student? Sign In Here
+            Student or Faculty? Sign In Here
           </button>
         </div>
         <div className="text-[11px] text-slate-400 font-medium">

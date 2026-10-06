@@ -17,7 +17,7 @@ import {
 const BRANCH_OPTIONS = ['CSE', 'ISE', 'AIML', 'ECE', 'EEE', 'Mechanical', 'Civil'];
 
 export default function AdminEligibilityRules() {
-  const { eligibilityRules, addEligibilityRule, updateEligibilityRule, deleteEligibilityRule } =
+  const { eligibilityRules, addRule: addEligibilityRule, updateRule: updateEligibilityRule, deleteRule: deleteEligibilityRule } =
     usePlacementAdmin();
 
   const [searchQuery, setSearchQuery] = useState('');
@@ -93,13 +93,14 @@ export default function AdminEligibilityRules() {
 
   const filteredRules = eligibilityRules.filter(
     (r) =>
-      r.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.jobRole.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.requiredSkills.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (r.companyName || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (r.jobRole || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (r.requiredSkills || '').toLowerCase().includes(searchQuery.toLowerCase()) ||
       (Array.isArray(r.eligibleBranches)
         ? r.eligibleBranches.some((b) => b.toLowerCase().includes(searchQuery.toLowerCase()))
         : false)
   );
+
 
   return (
     <div className="space-y-6 pb-12 max-w-7xl mx-auto animate-fade-in">

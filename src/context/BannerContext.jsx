@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useToast } from './ToastContext';
+import { apiService } from '../services/api';
 
 const BannerContext = createContext();
 
@@ -154,107 +155,102 @@ export const DEFAULT_BANNERS = [
 
 export function BannerProvider({ children }) {
   const { showToast } = useToast();
+  const [banners, setBanners] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const [banners, setBanners] = useState(() => {
+  const fetchBannersData = async () => {
+    setLoading(true);
     try {
-      const saved = localStorage.getItem('cp_banners');
-      if (saved) {
-        const parsed = JSON.parse(saved);
-        if (Array.isArray(parsed) && parsed.length > 0) {
-          return parsed;
-        }
+      let res = await apiService.getAdminBanners().catch(() => null);
+      if (!res || !res.success) {
+        res = await apiService.getBanners().catch(() => ({ success: true, banners: [] }));
       }
-    } catch (e) {}
-    return DEFAULT_BANNERS;
-  });
+      const rawList = res?.banners || res?.data || [];
+      const formatted = (rawList || []).map(b => ({
+        id: b.id,
+        title: b.title || 'Announcement',
+        description: b.description || '',
+        category: b.category || 'Announcements',
+        buttonText: b.button_text || b.buttonText || 'Learn More',
+        redirectLink: b.redirect_link || b.redirectLink || 'dashboard',
+        status: b.status || 'Active',
+        gradient: b.gradient || 'from-indigo-600 via-purple-600 to-brand-500',
+        accentColor: b.accent_color || b.accentColor || 'indigo',
+        iconName: b.icon_name || b.iconName || 'Sparkles',
+        imageUrl: b.image_url || b.imageUrl || '',
+        createdAt: b.created_at ? b.created_at.split('T')[0] : '2026-09-01',
+        updatedAt: b.updated_at ? b.updated_at.split('T')[0] : '2026-09-01'
+      }));
+      setBanners(formatted);
+    } catch (err) {
+      console.warn('Failed to load banners:', err.message);
+      setBanners([]);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-  // Persist banners to localStorage
   useEffect(() => {
-    try {
-      localStorage.setItem('cp_banners', JSON.stringify(banners));
-    } catch (e) {}
-  }, [banners]);
+    fetchBannersData();
+  }, []);
 
-  // Derived: Only active banners for the student dashboard carousel
   const activeBanners = useMemo(() => {
-    return banners.filter(banner => banner.status === 'Active');
+    return (banners || []).filter(b => b.status === 'Active');
   }, [banners]);
 
-  // Add new banner
-  const addBanner = (newBannerData) => {
-    const today = new Date().toISOString().split('T')[0];
-    const createdBanner = {
-      id: `banner-${Date.now()}`,
-      title: newBannerData.title?.trim() || 'New Banner Announcement',
-      description: newBannerData.description?.trim() || 'Exciting career opportunities and updates.',
-      category: newBannerData.category || 'Announcements',
-      buttonText: newBannerData.buttonText?.trim() || 'Learn More',
-      redirectLink: newBannerData.redirectLink || 'dashboard',
-      status: newBannerData.status === 'Inactive' ? 'Inactive' : 'Active',
-      gradient: newBannerData.gradient || 'from-indigo-600 via-purple-600 to-brand-500',
-      accentColor: newBannerData.accentColor || 'indigo',
-      iconName: newBannerData.iconName || 'Sparkles',
-      imageUrl: newBannerData.imageUrl || '',
-      createdAt: today,
-      updatedAt: today
-    };
-
-    setBanners(prev => [createdBanner, ...prev]);
-    showToast(`Banner "${createdBanner.title}" created successfully!`, 'success');
-    return createdBanner;
+  const addBanner = async (newBannerData) => {
+    try {
+      const res = await apiService.createAdminBanner(newBannerData);
+      if (res && res.success) {
+        showToast(`Banner "${newBannerData.title}" created!`, 'success');
+        fetchBannersData();
+        return res.banner;
+      } else {
+        showToast(res?.error || 'Failed to create banner', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error creating banner', 'error');
+    }
   };
 
-  // Edit / Update banner
-  const updateBanner = (id, updatedFields) => {
-    const today = new Date().toISOString().split('T')[0];
-    setBanners(prev =>
-      prev.map(banner => {
-        if (banner.id === id) {
-          return {
-            ...banner,
-            ...updatedFields,
-            updatedAt: today
-          };
-        }
-        return banner;
-      })
-    );
-    showToast('Banner updated successfully!', 'success');
+  const updateBanner = async (id, updatedFields) => {
+    try {
+      const res = await apiService.updateAdminBanner(id, updatedFields);
+      if (res && res.success) {
+        showToast('Banner updated successfully!', 'success');
+        fetchBannersData();
+      } else {
+        showToast(res?.error || 'Failed to update banner', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error updating banner', 'error');
+    }
   };
 
-  // Delete banner
-  const deleteBanner = (id) => {
-    const bannerToDelete = banners.find(b => b.id === id);
-    setBanners(prev => prev.filter(banner => banner.id !== id));
-    showToast(`Banner "${bannerToDelete?.title || 'Selected'}" deleted.`, 'info');
+  const deleteBanner = async (id) => {
+    try {
+      const res = await apiService.deleteAdminBanner(id);
+      if (res && res.success) {
+        showToast('Banner removed from database.', 'info');
+        fetchBannersData();
+      } else {
+        showToast(res?.error || 'Failed to delete banner', 'error');
+      }
+    } catch (err) {
+      showToast(err.message || 'Error deleting banner', 'error');
+    }
   };
 
-  // Enable / Disable status toggle
-  const toggleBannerStatus = (id) => {
-    const today = new Date().toISOString().split('T')[0];
-    setBanners(prev =>
-      prev.map(banner => {
-        if (banner.id === id) {
-          const nextStatus = banner.status === 'Active' ? 'Inactive' : 'Active';
-          showToast(
-            `Banner "${banner.title}" marked as ${nextStatus}.`,
-            nextStatus === 'Active' ? 'success' : 'info'
-          );
-          return {
-            ...banner,
-            status: nextStatus,
-            updatedAt: today
-          };
-        }
-        return banner;
-      })
-    );
+  const toggleBannerStatus = async (id) => {
+    const target = banners.find(b => b.id === id);
+    if (!target) return;
+    const nextStatus = target.status === 'Active' ? 'Inactive' : 'Active';
+    await updateBanner(id, { status: nextStatus });
   };
 
-  // Reset to default banners
   const resetBannersToDefault = () => {
-    setBanners(DEFAULT_BANNERS);
-    showToast('Banners restored to system default!', 'info');
+    fetchBannersData();
+    showToast('Banners synced with database.', 'info');
   };
 
   return (
@@ -266,7 +262,8 @@ export function BannerProvider({ children }) {
         updateBanner,
         deleteBanner,
         toggleBannerStatus,
-        resetBannersToDefault
+        resetBannersToDefault,
+        loading
       }}
     >
       {children}

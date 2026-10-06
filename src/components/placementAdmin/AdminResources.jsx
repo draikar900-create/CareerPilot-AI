@@ -50,15 +50,18 @@ export default function AdminResources() {
   };
 
   const openEditModal = (res) => {
+    let parsedDesc = {};
+    try { parsedDesc = JSON.parse(res.description || '{}'); } catch (e) {}
+
     setEditingResource(res);
     setFormData({
       title: res.title,
-      skillsCovered: Array.isArray(res.skillsCovered)
-        ? res.skillsCovered.join(', ')
-        : res.skillsCovered,
-      resourceType: res.resourceType,
-      level: res.level,
-      provider: res.provider,
+      skillsCovered: Array.isArray(parsedDesc.skillsCovered)
+        ? parsedDesc.skillsCovered.join(', ')
+        : (parsedDesc.skillsCovered || ''),
+      resourceType: res.category || 'PDF',
+      level: parsedDesc.level || 'Beginner',
+      provider: parsedDesc.provider || 'CareerPilot Placement Cell',
       url: res.url || ''
     });
   };
@@ -67,11 +70,22 @@ export default function AdminResources() {
     e.preventDefault();
     if (!formData.title.trim()) return;
 
+    const payload = {
+      title: formData.title,
+      category: formData.resourceType,
+      url: formData.url,
+      description: JSON.stringify({
+        provider: formData.provider,
+        level: formData.level,
+        skillsCovered: formData.skillsCovered.split(',').map(s => s.trim()).filter(Boolean)
+      })
+    };
+
     if (editingResource) {
-      updateResource(editingResource.id, formData);
+      updateResource(editingResource.id, payload);
       setEditingResource(null);
     } else {
-      addResource(formData);
+      addResource(payload);
       setShowAddModal(false);
     }
   };
@@ -84,14 +98,20 @@ export default function AdminResources() {
   };
 
   const filteredResources = resources.filter((r) => {
+    let parsedDesc = {};
+    try { parsedDesc = JSON.parse(r.description || '{}'); } catch(e) {}
+    
+    const provider = parsedDesc.provider || '';
+    const skillsCovered = parsedDesc.skillsCovered || [];
+
     const matchesSearch =
       r.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      r.provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      (Array.isArray(r.skillsCovered)
-        ? r.skillsCovered.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
+      provider.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      (Array.isArray(skillsCovered)
+        ? skillsCovered.some((s) => s.toLowerCase().includes(searchQuery.toLowerCase()))
         : false);
 
-    const matchesType = typeFilter === 'ALL' || r.resourceType === typeFilter;
+    const matchesType = typeFilter === 'ALL' || r.category === typeFilter;
 
     return matchesSearch && matchesType;
   });
@@ -214,40 +234,54 @@ export default function AdminResources() {
 
                     <td className="py-3.5 px-4">
                       <div className="flex flex-wrap gap-1">
-                        {Array.isArray(res.skillsCovered) && res.skillsCovered.length > 0 ? (
-                          res.skillsCovered.map((s, i) => (
-                            <span
-                              key={i}
-                              className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
-                            >
-                              {s}
-                            </span>
-                          ))
-                        ) : (
-                          <span className="text-slate-400 text-xs italic">General</span>
-                        )}
+                        {(() => {
+                          let parsedDesc = {};
+                          try { parsedDesc = JSON.parse(res.description || '{}'); } catch(e) {}
+                          const skillsCovered = parsedDesc.skillsCovered || [];
+                          return Array.isArray(skillsCovered) && skillsCovered.length > 0 ? (
+                            skillsCovered.map((s, i) => (
+                              <span
+                                key={i}
+                                className="px-2 py-0.5 rounded text-[10px] font-medium bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200 dark:border-slate-700"
+                              >
+                                {s}
+                              </span>
+                            ))
+                          ) : (
+                            <span className="text-slate-400 italic">No skills listed</span>
+                          );
+                        })()}
                       </div>
                     </td>
 
                     <td className="py-3.5 px-3">
                       <div className="flex items-center gap-1.5 font-semibold text-slate-700 dark:text-slate-300">
-                        {getTypeIcon(res.resourceType)}
-                        <span>{res.resourceType}</span>
+                        {getTypeIcon(res.category)}
+                        <span>{res.category || 'Unknown'}</span>
                       </div>
                     </td>
 
                     <td className="py-3.5 px-3">
-                      <span
-                        className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getLevelBadge(
-                          res.level
-                        )}`}
-                      >
-                        {res.level}
-                      </span>
+                      {(() => {
+                        let parsedDesc = {};
+                        try { parsedDesc = JSON.parse(res.description || '{}'); } catch(e) {}
+                        const level = parsedDesc.level || 'Beginner';
+                        return (
+                          <span
+                            className={`inline-block px-2.5 py-0.5 rounded-full text-[10px] font-bold border ${getLevelBadge(level)}`}
+                          >
+                            {level}
+                          </span>
+                        );
+                      })()}
                     </td>
 
                     <td className="py-3.5 px-4 font-medium text-slate-700 dark:text-slate-300">
-                      {res.provider}
+                      {(() => {
+                        let parsedDesc = {};
+                        try { parsedDesc = JSON.parse(res.description || '{}'); } catch(e) {}
+                        return parsedDesc.provider || 'N/A';
+                      })()}
                     </td>
 
                     <td className="py-3.5 px-4 text-right">

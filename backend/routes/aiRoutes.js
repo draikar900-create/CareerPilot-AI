@@ -2,28 +2,41 @@ import express from 'express';
 import dotenv from 'dotenv';
 import { supabaseAdmin } from '../config/supabase.js';
 import { authenticateUser } from '../middleware/authMiddleware.js';
+import AIProviderFactory from '../services/aiProviderService.js';
 
 dotenv.config();
 
 const router = express.Router();
 
 /**
+ * GET /api/ai/health
+ * Returns status of currently configured AI provider (Ollama / Gemini)
+ * Does NOT leak API keys or sensitive backend credentials.
+ */
+router.get('/health', async (req, res) => {
+  try {
+    const health = await AIProviderFactory.getHealth();
+    return res.status(health.available ? 200 : 503).json({
+      success: health.available,
+      health
+    });
+  } catch (err) {
+    return res.status(500).json({
+      success: false,
+      message: 'Failed to inspect AI provider health: ' + err.message
+    });
+  }
+});
+
+/**
  * POST /api/ai/chat
- * Student Career Guidance AI powered by Gemini 2.5 Flash
- * Enriches prompt with authenticated user's private career context
+ * Authenticated Student Career Guidance AI using AIProviderFactory
+ * Enriches prompt with student's private career context
  */
 router.post('/chat', authenticateUser, async (req, res) => {
   try {
-    const apiKey = process.env.GOOGLE_API_KEY;
-    if (!apiKey) {
-      return res.status(500).json({
-        success: false,
-        message: 'Gemini AI API Key (GOOGLE_API_KEY) is not configured on the backend server.'
-      });
-    }
-
     const userId = req.user.id;
-    const { message, conversationHistory } = req.body;
+    const { message } = req.body;
 
     if (!message || typeof message !== 'string') {
       return res.status(400).json({
@@ -32,7 +45,18 @@ router.post('/chat', authenticateUser, async (req, res) => {
       });
     }
 
-    // 1. Fetch authenticated user's context (profile, goals, roadmap, skills, progress)
+    // 1. Resolve Provider via AIProviderFactory (Ollama / Gemini)
+    let provider;
+    try {
+      provider = AIProviderFactory.getProvider();
+    } catch (configErr) {
+      return res.status(500).json({
+        success: false,
+        message: configErr.message
+      });
+    }
+
+    // 2. Fetch authenticated user's private context
     const [
       { data: profile },
       { data: goal },
@@ -47,7 +71,7 @@ router.post('/chat', authenticateUser, async (req, res) => {
       supabaseAdmin.from('progress_tracking').select('*').eq('user_id', userId).maybeSingle()
     ]);
 
-    // 2. Build system context string
+    // 3. Build system context string
     const studentContext = `
 Student Context (AUTHENTICATED USER ID: ${userId}):
 - Name: ${profile?.full_name || 'Student'}
@@ -57,7 +81,9 @@ Student Context (AUTHENTICATED USER ID: ${userId}):
 - Target Role: ${goal?.target_role || 'Software Engineer'}
 - Target Company: ${goal?.target_company || 'Top Tech Companies'}
 - Focus Skills: ${(goal?.focus_skills || []).join(', ') || 'Full Stack Development, Algorithms'}
-- Acquired Skills: ${(skills || []).map(s => s.skill_name).join(', ') || 'Python, React, JavaScript'}
+- Acquired Skills: ${(profile?.technical_skills || []).join(', ') || 'None listed'}
+- GitHub: ${profile?.github_url || 'Not provided'}
+- LinkedIn: ${profile?.linkedin_url || 'Not provided'}
 - Active Roadmap: ${roadmap?.title || 'Engineering Master Roadmap'}
 - Overall Progress Score: ${progress?.overall_score || 50}%
 `;
@@ -69,70 +95,43 @@ ${studentContext}
 
 Use the student's specific profile, skills, and target goals to tailor your response. Be concise, structured, and action-oriented.`;
 
-    // Call Gemini API using the official SDK
-    const { GoogleGenerativeAI } = await import('@google/generative-ai');
-    const genAI = new GoogleGenerativeAI(apiKey);
-    
-    const models = ['gemini-1.5-flash', 'gemini-1.5-pro', 'gemini-pro'];
-    let lastError = null;
-    let replyText = null;
-
-    for (const modelName of models) {
-      try {
-        const model = genAI.getGenerativeModel({ model: modelName });
-        const result = await model.generateContent({
-          contents: [
-            {
-              role: 'user',
-              parts: [{ text: `${systemPrompt}\n\nUser Message: ${message}` }]
-            }
-          ],
-          generationConfig: {
-            temperature: 0.7,
-          }
-        });
-        
-        replyText = result.response.text();
-        if (replyText) break; // Success
-      } catch (e) {
-        lastError = e;
-        console.warn(`Gemini model ${modelName} attempt failed:`, e.message);
-      }
-    }
-
-    if (!replyText) {
-      let statusMsg = 'Gemini AI service is temporarily unavailable.';
-      let statusCode = 502;
-      const errText = (lastError?.message || '').toLowerCase();
-
-      if (errText.includes('api key') || errText.includes('invalid') || errText.includes('400')) {
-        statusMsg = 'Gemini API key is invalid. Please check your backend GOOGLE_API_KEY environment variable.';
-        statusCode = 401;
-      } else if (errText.includes('quota') || errText.includes('429') || errText.includes('exhausted')) {
-        statusMsg = 'Gemini API rate limit or quota exceeded. Please try again shortly.';
-        statusCode = 429;
-      } else if (errText.includes('not found') || errText.includes('404')) {
-        statusMsg = 'The requested Gemini model is not supported or not found for this API key.';
-        statusCode = 404;
-      }
-
-      return res.status(statusCode).json({
-        success: false,
-        error: statusMsg,
-        details: process.env.NODE_ENV === 'development' ? errText : undefined
+    // 4. Generate AI response via common provider abstraction
+    let replyText;
+    try {
+      replyText = await provider.generateText({
+        systemPrompt,
+        userMessage: message,
+        temperature: 0.7
       });
+    } catch (aiErr) {
+      console.warn('AI Provider error, falling back to rule-based AI advisor:', aiErr.message);
+      replyText = `Hello ${profile?.full_name || 'Student'}! Here is career guidance tailored for your focus in ${goal?.target_role || 'Software Engineering'}:
+
+1. **Core Skills**: Focus on strengthening your fundamentals in ${goal?.focus_skills?.join(', ') || 'Data Structures, Algorithms, and System Design'}.
+2. **Project Portfolio**: Build at least 2 full-stack or domain-specific projects showcasing problem-solving and clean code.
+3. **Practice & Readiness**: Regularly solve practice problems on LeetCode/HackerRank and take CareerPilot Mock Assessments.
+4. **Networking**: Keep your LinkedIn and GitHub updated with recent achievements.
+
+*(AI Advisor Note: ${aiErr.message})*`;
     }
 
     return res.status(200).json({
       success: true,
+      provider: process.env.AI_PROVIDER || 'gemini',
       reply: replyText
     });
 
   } catch (err) {
-    console.error('Error in POST /api/ai/chat:', err);
-    return res.status(500).json({
+    console.error('Error in POST /api/ai/chat:', err.message);
+    const msg = err.message || '';
+    let statusCode = 502;
+    if (msg.includes('Key') || msg.includes('invalid') || msg.includes('401')) statusCode = 401;
+    if (msg.includes('quota') || msg.includes('429')) statusCode = 429;
+    if (msg.includes('not configured')) statusCode = 500;
+
+    return res.status(statusCode).json({
       success: false,
-      message: 'Failed to process AI chat query: ' + err.message
+      message: err.message
     });
   }
 });

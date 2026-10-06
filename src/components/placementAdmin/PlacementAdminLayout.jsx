@@ -20,19 +20,26 @@ import {
   Menu,
   X,
   Sliders,
-  Calendar
+  Calendar,
+  Folder,
+  Award
 } from 'lucide-react';
 
 import AdminOverview from './AdminOverview';
 import AdminStudents from './AdminStudents';
 import AdminCompanies from './AdminCompanies';
 import AdminJobs from './AdminJobs';
+import AdminInternships from './AdminInternships';
+import AdminProjects from './AdminProjects';
+import AdminCertificates from './AdminCertificates';
 import AdminSkills from './AdminSkills';
 import AdminResources from './AdminResources';
 import AdminEligibilityRules from './AdminEligibilityRules';
 import AdminNotifications from './AdminNotifications';
 import AdminBanners from './AdminBanners';
 import AdminEvents from './AdminEvents';
+import ContactManagement from '../admin/ContactManagement';
+import { Mail } from 'lucide-react';
 
 const ADMIN_MENU_ITEMS = [
   { id: 'overview', label: 'Overview', icon: LayoutDashboard },
@@ -40,9 +47,13 @@ const ADMIN_MENU_ITEMS = [
   { id: 'students', label: 'Students', icon: Users },
   { id: 'companies', label: 'Companies', icon: Building2 },
   { id: 'jobs', label: 'Jobs', icon: Briefcase },
+  { id: 'internships', label: 'Internships', icon: Briefcase },
+  { id: 'projects', label: 'Projects', icon: Folder },
+  { id: 'certificates', label: 'Certificates', icon: Award },
   { id: 'skills', label: 'Skills', icon: Cpu },
   { id: 'resources', label: 'Learning Resources', icon: BookOpen },
   { id: 'eligibility-rules', label: 'Eligibility Rules', icon: ShieldCheck },
+  { id: 'contacts', label: 'Contact Management', icon: Mail },
   { id: 'banners', label: 'Banner Management', icon: Sliders },
   { id: 'notifications', label: 'Notifications', icon: Bell }
 ];
@@ -93,10 +104,10 @@ export default function PlacementAdminLayout() {
               <div className="flex flex-col">
                 <div className="flex items-center gap-1.5">
                   <span className="font-extrabold text-base sm:text-lg tracking-tight text-slate-900 dark:text-white">
-                    CareerPilot<span className="text-indigo-500">AI</span>
+                    CareerPilot
                   </span>
                   <span className="text-[10px] uppercase font-black tracking-wider px-2 py-0.5 rounded bg-indigo-500/10 text-indigo-600 dark:text-indigo-400 border border-indigo-500/20">
-                    Placement Team
+                    TPO / Placement Portal
                   </span>
                 </div>
               </div>
@@ -123,10 +134,10 @@ export default function PlacementAdminLayout() {
             <div className="flex items-center gap-2 pl-2 border-l border-slate-200 dark:border-slate-800">
               <div className="hidden sm:flex flex-col text-right">
                 <span className="text-xs font-bold text-slate-900 dark:text-white">
-                  {currentUser?.name || 'Placement Team Admin'}
+                  {currentUser?.name || 'Placement Officer / TPO'}
                 </span>
-                <span className="text-[10px] text-slate-400 font-mono">
-                  {currentUser?.email || 'adminpc123@gmail.com'}
+                <span className="text-[10px] text-indigo-500 dark:text-indigo-400 font-mono">
+                  {currentUser?.email}
                 </span>
               </div>
 
@@ -231,10 +242,14 @@ export default function PlacementAdminLayout() {
           {activeTab === 'events' && <AdminEvents />}
           {activeTab === 'students' && <AdminStudents />}
           {activeTab === 'companies' && <AdminCompanies />}
-          {activeTab === 'jobs' && <AdminJobs />}
-          {activeTab === 'skills' && <AdminSkills />}
+          { activeTab === 'jobs' && <AdminJobs /> }
+          { activeTab === 'internships' && <AdminInternships /> }
+          { activeTab === 'projects' && <AdminProjects /> }
+          { activeTab === 'certificates' && <AdminCertificates /> }
+          { activeTab === 'skills' && <AdminSkills /> }
           {activeTab === 'resources' && <AdminResources />}
           {activeTab === 'eligibility-rules' && <AdminEligibilityRules />}
+          {activeTab === 'contacts' && <ContactManagement />}
           {activeTab === 'banners' && <AdminBanners />}
           {activeTab === 'notifications' && <AdminNotifications />}
         </main>

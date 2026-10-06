@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { usePlacementAdmin } from '../../context/PlacementAdminContext';
+import React, { useState, useEffect } from 'react';
+import apiService from '../../services/api';
 import {
   Bell,
   Search,
@@ -16,25 +16,68 @@ import {
 } from 'lucide-react';
 
 export default function NotificationsSection({ setActiveTab }) {
-  const { notifications } = usePlacementAdmin();
+  // Use the student-safe /api/notifications endpoint instead of the admin-only context.
+  // This prevents 403 errors for student users who are not in admin_users.
+  const [notifications, setNotifications] = useState([]);
+  const [facultyNotes, setFacultyNotes] = useState([]);
   const [filter, setFilter] = useState('all');
   const [search, setSearch] = useState('');
 
-  const getCategoryFromTitle = (title) => {
-    const t = (title || '').toLowerCase();
+  const fetchNotifications = async () => {
+    try {
+      const [notifRes, notesRes] = await Promise.all([
+        apiService.getStudentNotifications().catch(() => ({ notifications: [] })),
+        apiService.getStudentFacultyNotes().catch(() => ({ notes: [] }))
+      ]);
+
+      const notifList = Array.isArray(notifRes?.notifications) ? notifRes.notifications
+        : Array.isArray(notifRes?.data) ? notifRes.data : [];
+      
+      const notesList = Array.isArray(notesRes?.notes) ? notesRes.notes.map(n => ({
+        id: n.id,
+        title: `Faculty Note from ${n.faculty_name || 'Faculty Mentor'}`,
+        message: n.note_text || n.note || '',
+        created_at: n.created_at,
+        is_faculty_note: true,
+        faculty_name: n.faculty_name || 'Faculty Mentor',
+        category: n.category || 'Academic Guidance'
+      })) : [];
+
+      setNotifications(notifList);
+      setFacultyNotes(notesList);
+    } catch (e) {}
+  };
+
+  useEffect(() => {
+    fetchNotifications();
+    const intervalId = setInterval(() => {
+      fetchNotifications();
+    }, 15000);
+    return () => clearInterval(intervalId);
+  }, []);
+
+  const getCategoryFromTitle = (item) => {
+    if (item.is_faculty_note) {
+      return { label: 'Faculty Guidance Note', icon: ShieldCheck, color: 'text-blue-500 bg-blue-500/10 border-blue-500/20' };
+    }
+    const t = (item.title || '').toLowerCase();
     if (t.includes('internship') || t.includes('intern')) return { label: 'Internship Alert', icon: Briefcase, color: 'text-emerald-500 bg-emerald-500/10 border-emerald-500/20' };
     if (t.includes('hackathon') || t.includes('contest') || t.includes('event')) return { label: 'Event Notice', icon: Trophy, color: 'text-amber-500 bg-amber-500/10 border-amber-500/20' };
     if (t.includes('placement') || t.includes('hiring') || t.includes('drive') || t.includes('company')) return { label: 'Placement Drive', icon: Building2, color: 'text-purple-500 bg-purple-500/10 border-purple-500/20' };
     return { label: 'Official Announcement', icon: Info, color: 'text-brand-500 bg-brand-500/10 border-brand-500/20' };
   };
 
-  const filteredNotifications = (notifications || []).filter(item => {
+  const allItems = [...facultyNotes, ...notifications];
+
+  const filteredNotifications = allItems.filter(item => {
     const matchesSearch = item.title?.toLowerCase().includes(search.toLowerCase()) ||
-      item.message?.toLowerCase().includes(search.toLowerCase());
+      item.message?.toLowerCase().includes(search.toLowerCase()) ||
+      item.faculty_name?.toLowerCase().includes(search.toLowerCase());
     if (!matchesSearch) return false;
 
     if (filter === 'all') return true;
-    const cat = getCategoryFromTitle(item.title).label.toLowerCase();
+    if (filter === 'faculty') return item.is_faculty_note;
+    const cat = getCategoryFromTitle(item).label.toLowerCase();
     return cat.includes(filter.toLowerCase());
   });
 
@@ -71,6 +114,7 @@ export default function NotificationsSection({ setActiveTab }) {
         <div className="flex flex-wrap items-center gap-1.5 w-full sm:w-auto">
           {[
             { id: 'all', label: 'All Notices' },
+            { id: 'faculty', label: 'Faculty Notes' },
             { id: 'placement', label: 'Placement Drives' },
             { id: 'internship', label: 'Internships' },
             { id: 'event', label: 'Events & Hackathons' }

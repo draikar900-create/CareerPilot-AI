@@ -114,7 +114,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
   const handleDownloadPdf = (pdf) => {
     const element = document.createElement('a');
     const file = new Blob([
-      `# ${pdf.title}\n\nAuthor: ${pdf.author}\nDomain: ${details.domain}\nDate: ${new Date().toLocaleDateString()}\n\n---\n\n## Summary\n${pdf.contentSummary}\n\n## Key Topics\n${pdf.previewTopics.map(t => `- ${t}`).join('\n')}\n\n## Reference Notes\n${details.overview.explanation}\n\nCareerPilot AI - Verified Curriculum Study Document`
+      `# ${pdf.title}\n\nAuthor: ${pdf.author}\nDomain: ${details.domain}\nDate: ${new Date().toLocaleDateString()}\n\n---\n\n## Summary\n${pdf.contentSummary}\n\n## Key Topics\n${(pdf?.previewTopics || []).map(t => `- ${t}`).join('\n')}\n\n## Reference Notes\n${details?.overview?.explanation || ''}\n\nCareerPilot - Verified Curriculum Study Document`
     ], { type: 'text/plain' });
     element.href = URL.createObjectURL(file);
     element.download = `${pdf.title.replace(/[^a-zA-Z0-9]/g, '_')}.txt`;
@@ -155,7 +155,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
         ? prev.completedProjectTitles.filter(t => t !== projectTitle)
         : [...prev.completedProjectTitles, projectTitle];
       if (!isDone) {
-        showToast(`Project milestone "${projectTitle}" completed! 🚀`, 'success');
+        showToast(`Project milestone "${projectTitle}" completed.`, 'success');
       }
       return { ...prev, completedProjectTitles: updated };
     });
@@ -300,7 +300,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                 />
               </div>
               <span className="text-[10px] text-slate-400 mt-2 block font-medium">
-                {topicProgress === 100 ? '🎉 Complete & Verified' : 'Track notes, PDFs, tutorials & projects'}
+                {topicProgress === 100 ? 'Complete & Verified' : 'Track notes, PDFs, tutorials & projects'}
               </span>
             </div>
           </div>
@@ -409,7 +409,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                 <span>What You Will Learn</span>
               </div>
               <ul className="space-y-2.5">
-                {details.overview.whatYouWillLearn.map((item, idx) => (
+                {(Array.isArray(details?.overview?.whatYouWillLearn) ? details.overview.whatYouWillLearn : []).map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                     <Check className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                     <span>{item}</span>
@@ -425,7 +425,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                 <span>Foundational Prerequisites</span>
               </div>
               <ul className="space-y-2.5">
-                {details.overview.prerequisites.map((item, idx) => (
+                {(Array.isArray(details?.overview?.prerequisites) ? details.overview.prerequisites : []).map((item, idx) => (
                   <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                     <span className="w-1.5 h-1.5 rounded-full bg-indigo-500 shrink-0 mt-2" />
                     <span>{item}</span>
@@ -495,7 +495,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                 <span>Common Mistakes & Anti-Patterns</span>
               </div>
               <ul className="space-y-2.5">
-                {details.overview.commonMistakes.map((mistake, idx) => (
+                {(Array.isArray(details?.overview?.commonMistakes) ? details.overview.commonMistakes : []).map((mistake, idx) => (
                   <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                     <span className="w-1.5 h-1.5 rounded-full bg-rose-500 shrink-0 mt-2" />
                     <span>{mistake}</span>
@@ -511,7 +511,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                 <span>Real-World Industry Applications</span>
               </div>
               <ul className="space-y-2.5">
-                {details.overview.realWorldApplications.map((app, idx) => (
+                {(Array.isArray(details?.overview?.realWorldApplications) ? details.overview.realWorldApplications : []).map((app, idx) => (
                   <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300 leading-relaxed">
                     <CheckCircle2 className="w-4 h-4 text-emerald-500 shrink-0 mt-0.5" />
                     <span>{app}</span>
@@ -754,7 +754,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
             </h3>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-              {details.practiceResources.map((res) => (
+              {(Array.isArray(details?.practiceResources) ? details.practiceResources : []).map((res) => (
                 <a
                   key={res.id}
                   href={res.url}
@@ -792,7 +792,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
             </h3>
 
             <div className="space-y-3">
-              {details.overview.practiceQuestions.map((q, idx) => {
+              {(Array.isArray(details?.overview?.practiceQuestions) ? details.overview.practiceQuestions : []).map((q, idx) => {
                 const isExpanded = expandedPracticeIdx === idx;
                 return (
                   <div
@@ -841,7 +841,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
             </h3>
 
             <div className="space-y-3">
-              {details.overview.interviewQuestions.map((iq, idx) => {
+              {(Array.isArray(details?.overview?.interviewQuestions) ? details.overview.interviewQuestions : []).map((iq, idx) => {
                 const isExpanded = expandedInterviewIdx === idx;
                 return (
                   <div
@@ -895,13 +895,13 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
 
               <div className="flex flex-wrap items-center gap-2 text-xs">
                 <span className="px-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 font-semibold text-slate-700 dark:text-slate-300">
-                  🎓 Branch: <strong>{details.branch}</strong>
+                  Branch: <strong>{details.branch}</strong>
                 </span>
                 <span className="px-3 py-1.5 rounded-xl bg-white/80 dark:bg-slate-900/80 border border-slate-200 dark:border-slate-800 font-semibold text-slate-700 dark:text-slate-300">
-                  📅 Standing: <strong>Semester {details.semester}</strong>
+                  Standing: <strong>Semester {details.semester}</strong>
                 </span>
                 <span className="px-3 py-1.5 rounded-xl bg-brand-500/10 border border-brand-500/20 font-bold text-brand-600 dark:text-brand-400">
-                  🎯 Dream Role: <strong>{details.targetRole}</strong>
+                  Target Role: <strong>{details.targetRole}</strong>
                 </span>
               </div>
             </div>
@@ -959,7 +959,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                           Tech Stack
                         </span>
                         <div className="flex flex-wrap gap-1">
-                          {proj.tech.map((t, tIdx) => (
+                          {(Array.isArray(proj?.tech) ? proj.tech : []).map((t, tIdx) => (
                             <span
                               key={tIdx}
                               className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
@@ -1050,7 +1050,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                           Tech Stack
                         </span>
                         <div className="flex flex-wrap gap-1">
-                          {proj.tech.map((t, tIdx) => (
+                          {(Array.isArray(proj?.tech) ? proj.tech : []).map((t, tIdx) => (
                             <span
                               key={tIdx}
                               className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300"
@@ -1146,7 +1146,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                           Tech Stack
                         </span>
                         <div className="flex flex-wrap gap-1">
-                          {proj.tech.map((t, tIdx) => (
+                          {(Array.isArray(proj?.tech) ? proj.tech : []).map((t, tIdx) => (
                             <span
                               key={tIdx}
                               className="text-[10px] font-medium px-2 py-0.5 rounded-md bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border border-slate-200/60 dark:border-slate-700/60"
@@ -1338,7 +1338,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
               onClick={handleToggleRoadmapMilestone}
               className="px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-brand-600 hover:bg-brand-500 shadow-glow shrink-0"
             >
-              {topic.completed ? 'Roadmap Milestone Verified ✓' : 'Complete Topic Now'}
+              {topic.completed ? 'Roadmap Milestone Verified' : 'Complete Topic Now'}
             </button>
           </div>
         </div>
@@ -1372,7 +1372,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                   {activePdfModal.title}
                 </h2>
                 <p className="text-xs font-sans text-slate-400 mt-1">
-                  CareerPilot AI Curriculum • Semester {details.semester} Hand-Written Notes
+                  CareerPilot Curriculum • Semester {details.semester} Hand-Written Notes
                 </p>
               </div>
 
@@ -1388,7 +1388,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                     Core Study Syllabus:
                   </h5>
                   <ul className="space-y-1 text-slate-500 dark:text-slate-400">
-                    {activePdfModal.previewTopics.map((t, idx) => (
+                    {(Array.isArray(activePdfModal?.previewTopics) ? activePdfModal.previewTopics : []).map((t, idx) => (
                       <li key={idx} className="flex items-center gap-2">
                         <span className="w-1 h-1 rounded-full bg-brand-500" />
                         <span>Section {idx + 1}: {t}</span>
@@ -1470,7 +1470,7 @@ export default function TopicLearningHub({ topic, phaseIdx, phaseSemester, onBac
                 <span className="text-xs font-bold text-brand-600 dark:text-brand-400">
                   {activeVideoModal.level} Masterclass
                 </span>
-                <span className="text-xs text-slate-400">Rating: {activeVideoModal.rating} ⭐</span>
+                <span className="text-xs text-slate-400">Rating: {activeVideoModal.rating}</span>
               </div>
               <p className="text-xs text-slate-600 dark:text-slate-300 leading-relaxed">
                 {activeVideoModal.description}

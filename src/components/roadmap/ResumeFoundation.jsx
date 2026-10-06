@@ -98,7 +98,7 @@ export default function ResumeFoundation() {
                 Key Formatting Directives
               </span>
               <ul className="space-y-2">
-                {current.tips.map((tip, idx) => (
+                {(Array.isArray(current?.tips) ? current.tips : []).map((tip, idx) => (
                   <li key={idx} className="flex items-start gap-2.5 text-xs text-slate-700 dark:text-slate-300">
                     <span className="w-1.5 h-1.5 rounded-full bg-amber-500 mt-1.5 shrink-0" />
                     <span className="leading-relaxed">{tip}</span>
@@ -113,7 +113,7 @@ export default function ResumeFoundation() {
                 Pillar Completion Checklist (Click to check off)
               </span>
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
-                {current.checklist.map((item, idx) => {
+                {(Array.isArray(current?.checklist) ? current.checklist : []).map((item, idx) => {
                   const checkKey = `${current.id}-${idx}`;
                   const isDone = !!completedItems[checkKey];
                   return (

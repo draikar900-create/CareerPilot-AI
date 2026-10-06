@@ -36,6 +36,7 @@ export default function AIChat() {
 
   const [inputText, setInputText] = useState('');
   const [loading, setLoading] = useState(false);
+  const isSendingRef = useRef(false);
   const [copiedId, setCopiedId] = useState(null);
 
   const messagesEndRef = useRef(null);
@@ -78,7 +79,10 @@ export default function AIChat() {
 
   const handleSend = async (textToSend) => {
     const query = textToSend || inputText;
-    if (!query.trim() || loading) return;
+    if (!query.trim() || loading || isSendingRef.current) return;
+
+    isSendingRef.current = true;
+    setLoading(true);
 
     const userMsgId = Date.now();
     const userMessage = {
@@ -90,7 +94,6 @@ export default function AIChat() {
 
     setMessages((prev) => [...prev, userMessage]);
     setInputText('');
-    setLoading(true);
 
     try {
       const response = await apiService.sendAIChat(query);
@@ -111,12 +114,13 @@ export default function AIChat() {
         {
           id: Date.now() + 1,
           sender: 'ai',
-          text: `⚠️ Error: ${err.message || 'Could not connect to Gemini AI service. Make sure backend is running with valid GOOGLE_API_KEY.'}`,
+          text: `Error: ${err.message || 'Could not connect to Gemini AI service. Make sure backend is running with valid GOOGLE_API_KEY.'}`,
           timestamp: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
         }
       ]);
     } finally {
       setLoading(false);
+      isSendingRef.current = false;
     }
   };
 
@@ -277,7 +281,7 @@ export default function AIChat() {
           type="text"
           value={inputText}
           onChange={(e) => setInputText(e.target.value)}
-          placeholder="Ask CareerPilot AI anything about your technical career pathway..."
+          placeholder="Ask CareerPilot anything about your technical career pathway..."
           className="flex-1 bg-transparent px-3 py-2 text-xs sm:text-sm text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none"
         />
         <button

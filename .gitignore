@@ -1,29 +1,41 @@
 # Dependencies
 node_modules/
 
-# Environment / secrets
+# Environment & Secrets (Never commit credentials)
 .env
-.env.*
+.env.local
+.env.production
+.env.test*
+backend/.env
+backend/.env.local
+backend/.env.production
+backend/.env.test*
 !.env.example
+!backend/.env.example
 
-# Build output
+# Build Output
 dist/
 build/
+.cache/
 
-# Logs
+# Python Cache
+__pycache__/
+*.py[cod]
+
+# Zip Archives, Scratch Files & Temporary Debug Scripts
+*.zip
+scratch/
 *.log
 npm-debug.log*
 yarn-debug.log*
-pnpm-debug.log*
+debug_jwt.js
+backend/debug_jwt*.js
+test_auth.js
+test_all.js
+backend/test_*.js
 
-# IDE
+# IDE & OS
 .vscode/
 .idea/
-
-# OS
 .DS_Store
 Thumbs.db
-
-# Temporary files
-*.tmp
-*.temp

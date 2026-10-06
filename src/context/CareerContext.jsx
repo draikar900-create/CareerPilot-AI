@@ -1,7 +1,8 @@
 import React, { createContext, useContext, useState, useMemo, useEffect } from 'react';
-import { TARGET_ROLES, getRoadmapForRole, READINESS_QUIZ_QUESTIONS } from '../data/mockData';
+import { TARGET_ROLES, getRoadmapForRole } from '../data/mockData';
 import { useProfile } from './ProfileContext';
 import { useToast } from './ToastContext';
+import apiService from '../services/api';
 import confetti from 'canvas-confetti';
 
 const CareerContext = createContext();
@@ -65,6 +66,33 @@ export function CareerProvider({ children }) {
   useEffect(() => {
     localStorage.setItem('cp_test_results', JSON.stringify(testResults));
   }, [testResults]);
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!profile?.user_id) {
+      setTestResults({
+        taken: false,
+        score: 0,
+        aptitudeScore: 0,
+        techScore: 0,
+        commScore: 0,
+        strengths: [],
+        weaknesses: [],
+        recommendations: []
+      });
+      localStorage.removeItem('cp_test_results');
+      return;
+    }
+
+    apiService.getLatestAssessmentResult().then(res => {
+      if (isMounted && res && res.success && res.result) {
+        setTestResults(res.result);
+      }
+    }).catch(err => {
+      console.warn('Could not load latest assessment result from backend:', err.message);
+    });
+    return () => { isMounted = false; };
+  }, [profile?.user_id, profileSaveTimestamp]);
 
   useEffect(() => {
     localStorage.setItem('cp_streak', dailyStreak.toString());
@@ -177,101 +205,98 @@ export function CareerProvider({ children }) {
     showToast(`Dream role set to "${roleObj?.title}"!`, 'success');
   };
 
-  const toggleTopicCompletion = (phaseIdx, topicId) => {
-    if (!selectedRoleId) return;
-    setRoadmapsState(prev => {
-      const updatedList = [...(prev[selectedRoleId] || getRoadmapForRole(selectedRoleId))];
-      const phase = { ...updatedList[phaseIdx] };
-      phase.topics = phase.topics.map(t => {
-        if (t.id === topicId) {
-          const nextState = !t.completed;
-          if (nextState) {
-            try {
-              confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
-            } catch (e) {}
-            showToast(`Milestone completed: "${t.title}"!`, 'success');
-            // Advance streak if not done today
-            if (!streakActiveToday) {
-              setDailyStreak(s => s + 1);
-              setStreakActiveToday(true);
-            }
-          }
-          return { ...t, completed: nextState };
-        }
-        return t;
-      });
-      updatedList[phaseIdx] = phase;
-      const nextMap = { ...prev, [selectedRoleId]: updatedList };
-      localStorage.setItem('cp_roadmaps', JSON.stringify(nextMap));
-      return nextMap;
+  // State for Database-persisted AI Roadmap
+  const [dbRoadmap, setDbRoadmap] = useState(null);
+  const [isGeneratingRoadmap, setIsGeneratingRoadmap] = useState(false);
+
+  useEffect(() => {
+    let isMounted = true;
+    apiService.getRoadmap().then(res => {
+      if (isMounted && res && res.success && res.roadmap) {
+        setDbRoadmap(res.roadmap);
+      }
+    }).catch(err => {
+      console.warn('Could not load database roadmap:', err.message);
     });
+    return () => { isMounted = false; };
+  }, [profileSaveTimestamp]);
+
+  const regenerateAIRoadmap = async (targetRoleTitle) => {
+    setIsGeneratingRoadmap(true);
+    try {
+      const res = await apiService.generateRoadmap(targetRoleTitle || currentRole?.title || 'Software Engineer');
+      if (res && res.success && res.roadmap) {
+        setDbRoadmap(res.roadmap);
+        showToast('Personalized AI Roadmap generated successfully!', 'success');
+        return res.roadmap;
+      } else {
+        showToast('AI Roadmap generation failed. Preserving previous roadmap.', 'error');
+      }
+    } catch (err) {
+      console.error('Error generating AI roadmap:', err);
+      showToast('AI Roadmap service error: ' + err.message, 'error');
+    } finally {
+      setIsGeneratingRoadmap(false);
+    }
+  };
+
+  const toggleTopicCompletion = async (phaseIdx, topicId) => {
+    // 1. Local optimistic update in dbRoadmap
+    let nextCompletedState = true;
+    if (dbRoadmap && dbRoadmap.structured_data && dbRoadmap.structured_data.milestones) {
+      const updatedData = { ...dbRoadmap.structured_data };
+      const phase = updatedData.milestones[phaseIdx];
+      if (phase && phase.topics) {
+        const topic = phase.topics.find(t => t.id === topicId);
+        if (topic) {
+          nextCompletedState = !topic.completed;
+          topic.completed = nextCompletedState;
+        }
+      }
+      setDbRoadmap({ ...dbRoadmap, structured_data: updatedData });
+    }
+
+    if (nextCompletedState) {
+      try {
+        confetti({ particleCount: 50, spread: 60, origin: { y: 0.8 } });
+      } catch (e) {}
+      showToast('Milestone completed!', 'success');
+      if (!streakActiveToday) {
+        setDailyStreak(s => s + 1);
+        setStreakActiveToday(true);
+      }
+    }
+
+    // 2. Persist to backend database
+    try {
+      const res = await apiService.toggleRoadmapTopic(phaseIdx, topicId, nextCompletedState);
+      if (res && res.success && res.roadmap) {
+        setDbRoadmap(res.roadmap);
+      }
+    } catch (err) {
+      console.warn('Failed to sync topic completion to database:', err.message);
+    }
   };
 
   const completeDailyStreak = () => {
     if (!streakActiveToday) {
       setDailyStreak(prev => prev + 1);
       setStreakActiveToday(true);
-      showToast(`🔥 Streak incremented! Now at ${dailyStreak + 1} day streak!`, 'success');
+      showToast(`Streak incremented: ${dailyStreak + 1} days`, 'success');
     }
   };
 
   const submitTestAnswers = (answers) => {
-    let correctCount = 0;
-    let aptCorrect = 0;
-    let techCorrect = 0;
-    let commCorrect = 0;
-
-    READINESS_QUIZ_QUESTIONS.forEach(q => {
-      const userAns = answers[q.id];
-      if (userAns === q.answer) {
-        correctCount++;
-        if (q.section === 'Aptitude') aptCorrect++;
-        if (q.section === 'Technical MCQs') techCorrect++;
-        if (q.section === 'Communication') commCorrect++;
-      }
-    });
-
-    const totalQuestions = READINESS_QUIZ_QUESTIONS.length;
-    const finalScore = Math.round((correctCount / totalQuestions) * 100);
-
-    const calculatedResults = {
-      taken: true,
-      score: finalScore,
-      correctCount,
-      totalQuestions,
-      aptitudeScore: Math.round((aptCorrect / 5) * 100),
-      techScore: Math.round((techCorrect / 5) * 100),
-      commScore: Math.round((commCorrect / 5) * 100),
-      strengths: [
-        aptCorrect >= 3 ? 'Quantitative Deduction & Problem Solving' : 'Analytical Aptitude Basics',
-        techCorrect >= 3 ? 'Core Computer Science & Architecture' : 'Foundational Computing',
-        commCorrect >= 3 ? 'Professional Communication & STAR Technique' : 'Constructive Communication'
-      ],
-      weaknesses: [
-        aptCorrect < 3 ? 'Speed Math & Probability Formulations' : 'Edge-case Combinatorics',
-        techCorrect < 3 ? 'ACID Boundaries & Distributed Systems' : 'Performance Optimization',
-        commCorrect < 3 ? 'Stakeholder Alignment' : 'Executive Summaries'
-      ],
-      recommendations: [
-        'Practice targeted algorithmic patterns on NeetCode and LeetCode',
-        'Review the System Design Primer for database and caching trade-offs',
-        'Build and deploy a full-stack capstone project to demonstrate mastery'
-      ]
-    };
-
-    setTestResults(calculatedResults);
-
-    try {
-      confetti({ particleCount: 100, spread: 90, origin: { y: 0.6 } });
-    } catch (e) {}
-
-    showToast(`Test completed! You scored ${finalScore}%. Readiness calibrated!`, 'success');
-    return calculatedResults;
+    console.warn('submitTestAnswers is deprecated; assessments are evaluated server-authoritatively via apiService.submitAssessmentAttempt.');
+    return testResults;
   };
 
   return (
     <CareerContext.Provider
       value={{
+        dbRoadmap,
+        isGeneratingRoadmap,
+        regenerateAIRoadmap,
         targetRoles: TARGET_ROLES,
         selectedRoleId,
         setSelectedRoleId,
@@ -286,6 +311,7 @@ export function CareerProvider({ children }) {
         selectDreamRole,
         toggleTopicCompletion,
         testResults,
+        setTestResults,
         submitTestAnswers,
         appliedInternships,
         setAppliedInternships,

@@ -210,12 +210,12 @@ export default function AdminOverview({ setActiveTab }) {
       </div>
 
       {/* Additional Overview Data */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {/* Metric 1 */}
         <div className="glass-card rounded-2xl p-6 border border-slate-200/80 dark:border-white/10 space-y-3">
           <div className="flex items-center justify-between">
             <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
-              Registration Pipeline
+              Eligible Candidates
             </span>
             <div className="p-2 rounded-xl bg-blue-500/10 text-blue-500">
               <Users className="w-4 h-4" />
@@ -223,18 +223,18 @@ export default function AdminOverview({ setActiveTab }) {
           </div>
           <div>
             <div className="text-3xl font-extrabold text-slate-900 dark:text-white">
-              {overviewMetrics.studentsRegistered.toLocaleString()}
+              {(overviewMetrics.eligibleStudents || 0).toLocaleString()}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Students Registered
+              Eligible Students (CGPA ≥ 6.0)
             </p>
           </div>
           <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
-            <div className="bg-blue-500 h-full rounded-full" style={{ width: '100%' }} />
+            <div className="bg-blue-500 h-full rounded-full" style={{ width: `${registered > 0 ? Math.round(((overviewMetrics.eligibleStudents || 0) / registered) * 100) : 0}%` }} />
           </div>
           <div className="text-[11px] text-emerald-500 font-semibold flex items-center gap-1">
             <CheckCircle2 className="w-3.5 h-3.5" />
-            <span>100% of campus batch accounted for</span>
+            <span>{registered > 0 ? Math.round(((overviewMetrics.eligibleStudents || 0) / registered) * 100) : 0}% of cohort eligible for drives</span>
           </div>
         </div>
 
@@ -250,7 +250,7 @@ export default function AdminOverview({ setActiveTab }) {
           </div>
           <div>
             <div className="text-3xl font-extrabold text-slate-900 dark:text-white">
-              {overviewMetrics.studentsProfileCompleted.toLocaleString()}
+              {(overviewMetrics.studentsProfileCompleted || 0).toLocaleString()}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
               Students Profile Completed ({profileCompletePercent}%)
@@ -263,8 +263,8 @@ export default function AdminOverview({ setActiveTab }) {
             />
           </div>
           <div className="text-[11px] text-slate-500 dark:text-slate-400 flex items-center justify-between">
-            <span>Verified resumes & transcripts</span>
-            <span className="font-bold text-indigo-500">{overviewMetrics.studentsRegistered - overviewMetrics.studentsProfileCompleted} pending</span>
+            <span>Verified resumes</span>
+            <span className="font-bold text-indigo-500">{registered - (overviewMetrics.studentsProfileCompleted || 0)} pending</span>
           </div>
         </div>
 
@@ -280,10 +280,10 @@ export default function AdminOverview({ setActiveTab }) {
           </div>
           <div>
             <div className="text-3xl font-extrabold text-slate-900 dark:text-white">
-              {overviewMetrics.studentsPlacementReady.toLocaleString()}
+              {(overviewMetrics.studentsPlacementReady || 0).toLocaleString()}
             </div>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
-              Students Placement Ready ({readyPercent}%)
+              Placement Ready Candidates ({readyPercent}%)
             </p>
           </div>
           <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
@@ -294,7 +294,36 @@ export default function AdminOverview({ setActiveTab }) {
           </div>
           <div className="text-[11px] text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
             <TrendingUp className="w-3.5 h-3.5" />
-            <span>Meets benchmark for Tier-1 drives (Score ≥ 75%)</span>
+            <span>Average Index: {overviewMetrics.avgReadinessScore || 0}%</span>
+          </div>
+        </div>
+
+        {/* Metric 4 */}
+        <div className="glass-card rounded-2xl p-6 border border-slate-200/80 dark:border-white/10 space-y-3">
+          <div className="flex items-center justify-between">
+            <span className="text-xs font-bold uppercase tracking-wider text-slate-400">
+              Placement Records
+            </span>
+            <div className="p-2 rounded-xl bg-purple-500/10 text-purple-500">
+              <Briefcase className="w-4 h-4" />
+            </div>
+          </div>
+          <div>
+            <div className="text-2xl font-extrabold text-slate-900 dark:text-white">
+              {overviewMetrics.placedStudents > 0 ? overviewMetrics.placedStudents : 0}
+            </div>
+            <p className="text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+              {overviewMetrics.placedStudents > 0 ? 'Confirmed Placements' : 'No placement data available.'}
+            </p>
+          </div>
+          <div className="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-2 overflow-hidden">
+            <div
+              className="bg-purple-500 h-full rounded-full transition-all duration-500"
+              style={{ width: `${registered > 0 ? Math.round(((overviewMetrics.placedStudents || 0) / registered) * 100) : 0}%` }}
+            />
+          </div>
+          <div className="text-[11px] text-slate-500 dark:text-slate-400 font-medium truncate">
+            {overviewMetrics.placementStatusText || 'No placement data available.'}
           </div>
         </div>
       </div>

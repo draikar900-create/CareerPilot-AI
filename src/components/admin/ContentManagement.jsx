@@ -28,7 +28,10 @@ export default function ContentManagement() {
     deleteInternship,
     resources,
     addResource,
-    deleteResource
+    deleteResource,
+    certificates,
+    addCertificate,
+    deleteCertificate
   } = useAdmin();
 
   const { showToast } = useToast();
@@ -64,6 +67,14 @@ export default function ContentManagement() {
     duration: 'Self-Paced',
     rating: 4.8,
     url: 'https://example.com',
+    description: ''
+  });
+
+  const [newCertificate, setNewCertificate] = useState({
+    name: '',
+    issuer: '',
+    level: 'Beginner',
+    skills: 'AWS, Cloud',
     description: ''
   });
 
@@ -104,6 +115,19 @@ export default function ContentManagement() {
     setShowAddModal(false);
   };
 
+  const handleCreateCertificate = (e) => {
+    e.preventDefault();
+    if (!newCertificate.name.trim() || !newCertificate.issuer.trim()) {
+      showToast('Certificate name and issuer are required', 'error');
+      return;
+    }
+    addCertificate({
+      ...newCertificate,
+      skills: newCertificate.skills.split(',').map((s) => s.trim())
+    });
+    setShowAddModal(false);
+  };
+
   return (
     <div className="space-y-6 pb-12 max-w-6xl mx-auto">
       {/* Header Banner */}
@@ -128,7 +152,7 @@ export default function ContentManagement() {
               className="px-5 py-2.5 rounded-xl font-bold text-xs text-white bg-brand-600 hover:bg-brand-500 shadow-glow flex items-center gap-2 self-start sm:self-auto shrink-0 transition-all"
             >
               <Plus className="w-4 h-4" />
-              <span>Add New {activeTab === 'projects' ? 'Project' : activeTab === 'internships' ? 'Internship' : 'Resource'}</span>
+              <span>Add New {activeTab === 'projects' ? 'Project' : activeTab === 'internships' ? 'Internship' : activeTab === 'certificates' ? 'Certificate' : 'Resource'}</span>
             </button>
           )}
         </div>
@@ -173,6 +197,18 @@ export default function ContentManagement() {
         </button>
 
         <button
+          onClick={() => setActiveTab('certificates')}
+          className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
+            activeTab === 'certificates'
+              ? 'bg-brand-600 text-white shadow-glow'
+              : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800'
+          }`}
+        >
+          <Sparkles className="w-4 h-4" />
+          <span>Certificates ({(certificates || []).length})</span>
+        </button>
+
+        <button
           onClick={() => setActiveTab('events')}
           className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold transition-all ${
             activeTab === 'events'
@@ -200,38 +236,48 @@ export default function ContentManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {projects.map((proj) => (
-                  <tr key={proj.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
-                    <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900 dark:text-white">{proj.title}</div>
-                      <div className="text-xs text-slate-400 truncate max-w-sm">{proj.description}</div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-brand-500">
-                        {proj.difficulty}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-xs font-medium">{proj.duration}</td>
-                    <td className="px-6 py-4">
-                      <div className="flex flex-wrap gap-1 max-w-xs">
-                        {proj.skills.map((s) => (
-                          <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
-                            {s}
-                          </span>
-                        ))}
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button
-                        onClick={() => deleteProject(proj.id)}
-                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800"
-                        title="Delete Project"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
+                {(projects || []).map((proj) => {
+                  const skillsList = Array.isArray(proj?.skills)
+                    ? proj.skills
+                    : Array.isArray(proj?.technologies)
+                    ? proj.technologies
+                    : typeof proj?.technologies === 'string'
+                    ? proj.technologies.split(',').map((s) => s.trim()).filter(Boolean)
+                    : [];
+
+                  return (
+                    <tr key={proj?.id || Math.random()} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                      <td className="px-6 py-4">
+                        <div className="font-bold text-slate-900 dark:text-white">{proj?.title || 'Untitled Project'}</div>
+                        <div className="text-xs text-slate-400 truncate max-w-sm">{proj?.description || ''}</div>
+                      </td>
+                      <td className="px-6 py-4">
+                        <span className="text-xs font-bold px-2.5 py-0.5 rounded-full bg-slate-100 dark:bg-slate-800 text-brand-500">
+                          {proj?.difficulty || 'Intermediate'}
+                        </span>
+                      </td>
+                      <td className="px-6 py-4 text-xs font-medium">{proj?.duration || 'Flexible'}</td>
+                      <td className="px-6 py-4">
+                        <div className="flex flex-wrap gap-1 max-w-xs">
+                          {skillsList.map((s) => (
+                            <span key={s} className="text-[10px] px-1.5 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                              {s}
+                            </span>
+                          ))}
+                        </div>
+                      </td>
+                      <td className="px-6 py-4 text-right">
+                        <button
+                          onClick={() => deleteProject(proj?.id)}
+                          className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                          title="Delete Project"
+                        >
+                          <Trash2 className="w-4 h-4" />
+                        </button>
+                      </td>
+                    </tr>
+                  );
+                })}
               </tbody>
             </table>
           </div>
@@ -253,18 +299,18 @@ export default function ContentManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {internships.map((intern) => (
-                  <tr key={intern.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                {(internships || []).map((intern) => (
+                  <tr key={intern?.id || Math.random()} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                     <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900 dark:text-white">{intern.company}</div>
-                      <div className="text-xs text-brand-500 font-medium">{intern.role}</div>
+                      <div className="font-bold text-slate-900 dark:text-white">{intern?.company || intern?.company_name || 'Partner Org'}</div>
+                      <div className="text-xs text-brand-500 font-medium">{intern?.role || intern?.role_title || 'Intern'}</div>
                     </td>
-                    <td className="px-6 py-4 text-xs">{intern.location}</td>
-                    <td className="px-6 py-4 text-xs font-bold text-emerald-500">{intern.stipend}</td>
-                    <td className="px-6 py-4 text-xs text-rose-500">{intern.deadline}</td>
+                    <td className="px-6 py-4 text-xs">{intern?.location || 'Remote'}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-emerald-500">{intern?.stipend || 'Competitive'}</td>
+                    <td className="px-6 py-4 text-xs text-rose-500">{intern?.deadline || 'Rolling'}</td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => deleteInternship(intern.id)}
+                        onClick={() => deleteInternship(intern?.id)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                         title="Delete Internship"
                       >
@@ -294,24 +340,70 @@ export default function ContentManagement() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
-                {resources.map((res) => (
-                  <tr key={res.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                {(resources || []).map((res) => (
+                  <tr key={res?.id || Math.random()} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
                     <td className="px-6 py-4">
-                      <div className="font-bold text-slate-900 dark:text-white">{res.title}</div>
-                      <div className="text-xs text-slate-400">{res.duration}</div>
+                      <div className="font-bold text-slate-900 dark:text-white">{res?.title || 'Learning Resource'}</div>
+                      <div className="text-xs text-slate-400">{res?.duration || 'Self-paced'}</div>
                     </td>
                     <td className="px-6 py-4">
                       <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
-                        {res.category}
+                        {res?.category || 'General'}
                       </span>
                     </td>
-                    <td className="px-6 py-4 text-xs font-medium">{res.provider}</td>
-                    <td className="px-6 py-4 text-xs font-bold text-amber-500">{res.rating} ⭐</td>
+                    <td className="px-6 py-4 text-xs font-medium">{res?.provider || 'External'}</td>
+                    <td className="px-6 py-4 text-xs font-bold text-amber-500">{res?.rating || '4.8'}</td>
                     <td className="px-6 py-4 text-right">
                       <button
-                        onClick={() => deleteResource(res.id)}
+                        onClick={() => deleteResource(res?.id)}
                         className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800"
                         title="Delete Resource"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </div>
+      )}
+
+      {/* Certificates Tab Table */}
+      {activeTab === 'certificates' && (
+        <div className="glass-card rounded-3xl border border-slate-200/80 dark:border-white/10 overflow-hidden shadow-sm">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm text-slate-600 dark:text-slate-300">
+              <thead className="text-xs uppercase bg-slate-100/70 dark:bg-slate-900/70 text-slate-400 border-b border-slate-200 dark:border-slate-800 font-semibold tracking-wider">
+                <tr>
+                  <th className="px-6 py-4">Certificate Name</th>
+                  <th className="px-6 py-4">Issuer</th>
+                  <th className="px-6 py-4">Level</th>
+                  <th className="px-6 py-4">Skills</th>
+                  <th className="px-6 py-4 text-right">Action</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-slate-100 dark:divide-slate-800/60">
+                {(certificates || []).map((cert) => (
+                  <tr key={cert.id} className="hover:bg-slate-50/50 dark:hover:bg-slate-800/30">
+                    <td className="px-6 py-4">
+                      <div className="font-bold text-slate-900 dark:text-white">{cert.name}</div>
+                    </td>
+                    <td className="px-6 py-4 text-xs font-medium">{cert.issuer}</td>
+                    <td className="px-6 py-4">
+                      <span className="text-xs font-semibold px-2 py-0.5 rounded bg-slate-100 dark:bg-slate-800">
+                        {cert.level}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-xs text-brand-500">
+                      {(cert.skills || []).join(', ')}
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button
+                        onClick={() => deleteCertificate(cert.id)}
+                        className="p-1.5 rounded-lg text-slate-400 hover:text-rose-500 hover:bg-slate-100 dark:hover:bg-slate-800"
+                        title="Delete Certificate"
                       >
                         <Trash2 className="w-4 h-4" />
                       </button>
@@ -334,7 +426,7 @@ export default function ContentManagement() {
         <Modal
           isOpen={showAddModal}
           onClose={() => setShowAddModal(false)}
-          title={`Add New ${activeTab === 'projects' ? 'Project' : activeTab === 'internships' ? 'Internship' : 'Resource'}`}
+          title={`Add New ${activeTab === 'projects' ? 'Project' : activeTab === 'internships' ? 'Internship' : activeTab === 'certificates' ? 'Certificate' : 'Resource'}`}
         >
           {activeTab === 'projects' && (
             <form onSubmit={handleCreateProject} className="space-y-4">
@@ -556,6 +648,94 @@ export default function ContentManagement() {
                   className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-glow"
                 >
                   Publish Resource
+                </button>
+              </div>
+            </form>
+          )}
+
+          {activeTab === 'certificates' && (
+            <form onSubmit={handleCreateCertificate} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Certificate Name
+                </label>
+                <input
+                  type="text"
+                  value={newCertificate.name}
+                  onChange={(e) => setNewCertificate({ ...newCertificate, name: e.target.value })}
+                  placeholder="e.g. AWS Certified Solutions Architect"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white text-sm"
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Issuer
+                  </label>
+                  <input
+                    type="text"
+                    value={newCertificate.issuer}
+                    onChange={(e) => setNewCertificate({ ...newCertificate, issuer: e.target.value })}
+                    placeholder="e.g. Amazon Web Services"
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white text-sm"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                    Level
+                  </label>
+                  <select
+                    value={newCertificate.level}
+                    onChange={(e) => setNewCertificate({ ...newCertificate, level: e.target.value })}
+                    className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white text-sm"
+                  >
+                    <option value="Beginner">Beginner</option>
+                    <option value="Intermediate">Intermediate</option>
+                    <option value="Advanced">Advanced</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Skills Validated (comma separated)
+                </label>
+                <input
+                  type="text"
+                  value={newCertificate.skills}
+                  onChange={(e) => setNewCertificate({ ...newCertificate, skills: e.target.value })}
+                  placeholder="AWS, S3, EC2"
+                  className="w-full px-3.5 py-2 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white text-sm"
+                />
+              </div>
+              
+              <div>
+                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 uppercase tracking-wider mb-1">
+                  Brief Description
+                </label>
+                <textarea
+                  rows={2}
+                  value={newCertificate.description}
+                  onChange={(e) => setNewCertificate({ ...newCertificate, description: e.target.value })}
+                  placeholder="Validates overall understanding of AWS Cloud..."
+                  className="w-full p-3 rounded-xl border border-slate-200 dark:border-slate-800 bg-white/50 dark:bg-slate-900/50 text-slate-900 dark:text-white text-sm"
+                />
+              </div>
+
+              <div className="flex justify-end gap-3 pt-4 border-t border-slate-200 dark:border-slate-800">
+                <button
+                  type="button"
+                  onClick={() => setShowAddModal(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-slate-600 dark:text-slate-400 hover:bg-slate-100"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-6 py-2 rounded-xl text-xs font-bold text-white bg-brand-600 hover:bg-brand-500 shadow-glow"
+                >
+                  Publish Certificate
                 </button>
               </div>
             </form>

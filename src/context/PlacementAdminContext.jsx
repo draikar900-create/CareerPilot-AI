@@ -1,11 +1,23 @@
 import React, { createContext, useContext, useState, useEffect, useMemo } from 'react';
 import { useToast } from './ToastContext';
+import { useAuth } from './AuthContext';
 import { apiService } from '../services/api';
 
 const PlacementAdminContext = createContext();
 
 export function PlacementAdminProvider({ children }) {
   const { showToast } = useToast();
+  const { isAuthenticated, currentUser } = useAuth();
+
+  const isAdmin = Boolean(
+    isAuthenticated && (
+      currentUser?.role === 'Admin' ||
+      currentUser?.role === 'SuperAdmin' ||
+      currentUser?.role === 'PlacementOfficer' ||
+      currentUser?.user_metadata?.role === 'Admin' ||
+      currentUser?.app_metadata?.role === 'Admin'
+    )
+  );
 
   const [students, setStudents] = useState([]);
   const [companies, setCompanies] = useState([]);
@@ -14,20 +26,44 @@ export function PlacementAdminProvider({ children }) {
   const [resources, setResources] = useState([]);
   const [eligibilityRules, setEligibilityRules] = useState([]);
   const [notifications, setNotifications] = useState([]);
+  const [projects, setProjects] = useState([]);
+  const [internships, setInternships] = useState([]);
+  const [certificates, setCertificates] = useState([]);
   const [loading, setLoading] = useState(true);
 
   const fetchPlacementAdminData = async () => {
     setLoading(true);
     try {
-      const [stRes, compRes, jobsRes, skillsRes, resRes, rulesRes, notifRes] = await Promise.all([
-        apiService.getAdminStudents().catch(() => ({ success: true, students: [] })),
+      // 1. Fetch public/shared data accessible to all authenticated users
+      const [compRes, jobsRes, projRes, intRes, certRes] = await Promise.all([
         apiService.getCompanies().catch(() => ({ success: true, companies: [] })),
         apiService.getJobs().catch(() => ({ success: true, jobs: [] })),
-        apiService.getAdminSkills().catch(() => ({ success: true, skills: [] })),
-        apiService.getAdminResources().catch(() => ({ success: true, resources: [] })),
-        apiService.getAdminRules().catch(() => ({ success: true, rules: [] })),
-        apiService.getAdminNotifications().catch(() => ({ success: true, notifications: [] }))
+        apiService.getProjects().catch(() => ({ success: true, data: [] })),
+        apiService.getInternships().catch(() => ({ success: true, data: [] })),
+        apiService.getCertificates().catch(() => ({ success: true, data: [] }))
       ]);
+
+      let stRes = { students: [] };
+      let skillsRes = { skills: [] };
+      let resRes = { resources: [] };
+      let rulesRes = { rules: [] };
+      let notifRes = { notifications: [] };
+
+      // 2. Only fetch admin-restricted endpoints if current user actually has an admin role
+      if (isAdmin) {
+        const [adminSt, adminSk, adminRe, adminRu, adminNo] = await Promise.all([
+          apiService.getAdminStudents().catch(() => ({ success: true, students: [] })),
+          apiService.getAdminSkills().catch(() => ({ success: true, skills: [] })),
+          apiService.getAdminResources().catch(() => ({ success: true, resources: [] })),
+          apiService.getAdminRules().catch(() => ({ success: true, rules: [] })),
+          apiService.getAdminNotifications().catch(() => ({ success: true, notifications: [] }))
+        ]);
+        stRes = adminSt;
+        skillsRes = adminSk;
+        resRes = adminRe;
+        rulesRes = adminRu;
+        notifRes = adminNo;
+      }
 
       const stList = Array.isArray(stRes?.students) ? stRes.students : Array.isArray(stRes?.data) ? stRes.data : [];
       const compList = Array.isArray(compRes?.companies) ? compRes.companies : Array.isArray(compRes?.data) ? compRes.data : [];
@@ -36,6 +72,9 @@ export function PlacementAdminProvider({ children }) {
       const resourceList = Array.isArray(resRes?.resources) ? resRes.resources : Array.isArray(resRes?.data) ? resRes.data : [];
       const ruleList = Array.isArray(rulesRes?.rules) ? rulesRes.rules : Array.isArray(rulesRes?.data) ? rulesRes.data : [];
       const notifList = Array.isArray(notifRes?.notifications) ? notifRes.notifications : Array.isArray(notifRes?.data) ? notifRes.data : [];
+      const projList = Array.isArray(projRes?.data) ? projRes.data : Array.isArray(projRes?.projects) ? projRes.projects : [];
+      const intList = Array.isArray(intRes?.data) ? intRes.data : Array.isArray(intRes?.internships) ? intRes.internships : [];
+      const certList = Array.isArray(certRes?.data) ? certRes.data : Array.isArray(certRes?.certificates) ? certRes.certificates : [];
 
       setStudents(stList);
       setCompanies(compList);
@@ -44,6 +83,9 @@ export function PlacementAdminProvider({ children }) {
       setResources(resourceList);
       setEligibilityRules(ruleList);
       setNotifications(notifList);
+      setProjects(projList);
+      setInternships(intList);
+      setCertificates(certList);
     } catch (err) {
       console.warn('Placement admin data sync error:', err.message);
     } finally {
@@ -51,21 +93,39 @@ export function PlacementAdminProvider({ children }) {
     }
   };
 
+  // Only fetch once authenticated; re-run if role changes
   useEffect(() => {
-    fetchPlacementAdminData();
-  }, []);
+    if (isAuthenticated) {
+      fetchPlacementAdminData();
+    }
+  }, [isAuthenticated, isAdmin]);
 
   const overviewMetrics = useMemo(() => {
+    const totalSt = (students || []).length;
+    const eligibleSt = (students || []).filter(s => parseFloat(s.cgpa || 0) >= 6.0).length;
+    const profileCompletedSt = (students || []).filter(s => s.resume_url).length;
+    const placementReadySt = (students || []).filter(s => (s.readiness_score || s.readinessScore || 0) >= 75).length;
+    const placedSt = (students || []).filter(s => s.is_placed).length;
+    const avgReadiness = totalSt > 0 
+      ? Math.round((students || []).reduce((sum, s) => sum + (s.readinessScore || s.readiness_score || 0), 0) / totalSt)
+      : 0;
+
     return {
-      totalStudents: students.length,
-      totalCompanies: companies.length,
-      totalJobs: jobs.length,
-      totalResources: resources.length,
-      studentsRegistered: students.length,
-      studentsProfileCompleted: students.filter(s => s.resume_url).length,
-      studentsPlacementReady: Math.round(students.length * 0.75)
+      totalStudents: totalSt,
+      eligibleStudents: eligibleSt,
+      totalCompanies: (companies || []).length,
+      totalJobs: (jobs || []).length,
+      totalInternships: (internships || []).length,
+      totalResources: (resources || []).length,
+      totalSkills: (skills || []).length,
+      studentsRegistered: totalSt,
+      studentsProfileCompleted: profileCompletedSt,
+      studentsPlacementReady: placementReadySt,
+      placedStudents: placedSt,
+      avgReadinessScore: avgReadiness,
+      placementStatusText: placedSt > 0 ? `${placedSt} Candidates Placed` : 'No placement data available.'
     };
-  }, [students, companies, jobs, resources]);
+  }, [students, companies, jobs, internships, resources, skills]);
 
   const addCompany = async (companyData) => {
     try {
@@ -203,7 +263,7 @@ export function PlacementAdminProvider({ children }) {
     try {
       const res = await apiService.createAdminRule(data);
       if (res.success) {
-        showToast(`Rule "${data.rule_name}" added successfully!`, 'success');
+        showToast(`Rule "${data.companyName || data.rule_name}" added successfully!`, 'success');
         fetchPlacementAdminData();
       }
     } catch (err) {
@@ -230,6 +290,133 @@ export function PlacementAdminProvider({ children }) {
       }
     } catch (err) {
       showToast(err.message || 'Failed to delete rule', 'error');
+    }
+  };
+
+  // Notifications — these were missing entirely, causing "sendNotification is not a function"
+  const sendNotification = async (formData) => {
+    try {
+      const res = await apiService.sendAdminNotification(formData);
+      if (res.success) {
+        showToast('Notification broadcast to all students!', 'success');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to send notification', 'error');
+    }
+  };
+
+  const deleteNotification = async (id) => {
+    try {
+      const res = await apiService.deleteAdminNotification(id);
+      if (res.success) {
+        showToast('Notification deleted.', 'info');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to delete notification', 'error');
+    }
+  };
+
+  const addProject = async (data) => {
+    try {
+      const res = await apiService.createAdminProject(data);
+      if (res.success) {
+        showToast('Project added successfully!', 'success');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to add project', 'error');
+    }
+  };
+  const updateProject = async (id, data) => {
+    try {
+      const res = await apiService.updateAdminProject(id, data);
+      if (res.success) {
+        showToast('Project updated successfully!', 'success');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to update project', 'error');
+    }
+  };
+  const deleteProject = async (id) => {
+    try {
+      const res = await apiService.deleteAdminProject(id);
+      if (res.success) {
+        showToast('Project deleted.', 'info');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to delete project', 'error');
+    }
+  };
+
+  const addInternship = async (data) => {
+    try {
+      const res = await apiService.createInternship(data);
+      if (res.success) {
+        showToast('Internship added successfully!', 'success');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to add internship', 'error');
+    }
+  };
+  const updateInternship = async (id, data) => {
+    try {
+      const res = await apiService.updateAdminInternship(id, data);
+      if (res.success) {
+        showToast('Internship updated successfully!', 'success');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to update internship', 'error');
+    }
+  };
+  const deleteInternship = async (id) => {
+    try {
+      const res = await apiService.deleteInternship(id);
+      if (res.success) {
+        showToast('Internship deleted.', 'info');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to delete internship', 'error');
+    }
+  };
+
+  const addCertificate = async (data) => {
+    try {
+      const res = await apiService.createAdminCertificate(data);
+      if (res.success) {
+        showToast('Certificate added successfully!', 'success');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to add certificate', 'error');
+    }
+  };
+  const updateCertificate = async (id, data) => {
+    try {
+      const res = await apiService.updateAdminCertificate(id, data);
+      if (res.success) {
+        showToast('Certificate updated successfully!', 'success');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to update certificate', 'error');
+    }
+  };
+  const deleteCertificate = async (id) => {
+    try {
+      const res = await apiService.deleteAdminCertificate(id);
+      if (res.success) {
+        showToast('Certificate deleted.', 'info');
+        fetchPlacementAdminData();
+      }
+    } catch (err) {
+      showToast(err.message || 'Failed to delete certificate', 'error');
     }
   };
 
@@ -278,6 +465,20 @@ export function PlacementAdminProvider({ children }) {
         updateRule,
         deleteRule,
         notifications,
+        sendNotification,
+        deleteNotification,
+        projects,
+        addProject,
+        updateProject,
+        deleteProject,
+        internships,
+        addInternship,
+        updateInternship,
+        deleteInternship,
+        certificates,
+        addCertificate,
+        updateCertificate,
+        deleteCertificate,
         fetchPlacementAdminData,
         loading
       }}

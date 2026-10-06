@@ -28,7 +28,7 @@ import {
 
 export default function SettingsPage({ setActiveTab }) {
   const { profile, updateProfile, saveProfile } = useProfile();
-  const { currentUser, setCurrentUser, verifyCurrentPassword, updateAccountPassword } = useAuth();
+  const { currentUser, setCurrentUser, updatePassword } = useAuth();
   const { theme, themeMode, setThemeMode, isDark } = useTheme();
   const { showToast } = useToast();
 
@@ -40,27 +40,25 @@ export default function SettingsPage({ setActiveTab }) {
   const isInvalidName = (n) => !n || typeof n !== 'string' || n.toLowerCase().includes('admin') || n.toLowerCase().includes('demo user') || n.toLowerCase().includes('test user');
   const getSafeStudentName = () => {
     if (profile?.fullName && !isInvalidName(profile.fullName)) return profile.fullName;
-    if (currentUser?.role === 'Student' && currentUser?.name && !isInvalidName(currentUser.name)) return currentUser.name;
-    const saved = localStorage.getItem('cp_student_name');
-    if (saved && !isInvalidName(saved)) return saved;
+    if (currentUser?.name && !isInvalidName(currentUser.name)) return currentUser.name;
     return '';
   };
 
   const [profileForm, setProfileForm] = useState({
     fullName: getSafeStudentName(),
-    email: profile?.email || (currentUser?.role === 'Student' ? currentUser?.email : '') || '',
+    email: profile?.email || currentUser?.email || '',
     collegeName: profile?.collegeName || ''
   });
 
   useEffect(() => {
     setProfileForm({
       fullName: getSafeStudentName(),
-      email: profile?.email || (currentUser?.role === 'Student' ? currentUser?.email : '') || '',
+      email: profile?.email || currentUser?.email || '',
       collegeName: profile?.collegeName || ''
     });
   }, [profile, currentUser]);
 
-  const handleSaveProfile = (e) => {
+  const handleSaveProfile = async (e) => {
     e.preventDefault();
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
@@ -84,26 +82,21 @@ export default function SettingsPage({ setActiveTab }) {
     const trimmedEmail = profileForm.email.trim();
     const trimmedCollege = profileForm.collegeName.trim();
 
-    localStorage.setItem('cp_student_name', trimmedName);
-
     updateProfile('fullName', trimmedName);
     updateProfile('email', trimmedEmail);
     updateProfile('collegeName', trimmedCollege);
 
-    if (currentUser && currentUser.role === 'Student') {
-      const updatedUser = {
-        ...currentUser,
+    if (currentUser) {
+      setCurrentUser(prev => ({
+        ...prev,
         name: trimmedName,
         email: trimmedEmail
-      };
-      setCurrentUser(updatedUser);
-      localStorage.setItem('cp_student_user', JSON.stringify(updatedUser));
-      localStorage.setItem('cp_user', JSON.stringify(updatedUser));
+      }));
     }
 
-    saveProfile();
-    showToast('Profile updated successfully.', 'success');
+    await saveProfile();
   };
+
 
   // -------------------------------------------------------------
   // 2. Account & Security State
@@ -139,26 +132,10 @@ export default function SettingsPage({ setActiveTab }) {
     return { label: 'Weak', score: 33, color: 'bg-rose-500', text: 'text-rose-500' };
   })();
 
-  const handleUpdatePassword = (e) => {
+  const handleUpdatePassword = async (e) => {
     e.preventDefault();
 
-    // 1. Current password must be manually entered
-    if (!securityForm.currentPassword) {
-      showToast('Please enter your current password.', 'error');
-      return;
-    }
-
-    // 2. Verify current password against authenticated account
-    const isCurrentValid = verifyCurrentPassword
-      ? verifyCurrentPassword(securityForm.currentPassword)
-      : (securityForm.currentPassword === (localStorage.getItem('cp_password') || 'password123'));
-
-    if (!isCurrentValid) {
-      showToast('Current password is incorrect.', 'error');
-      return;
-    }
-
-    // 3. New password validation
+    // New password validation
     if (!securityForm.newPassword) {
       showToast('Please enter a new password.', 'error');
       return;
@@ -169,13 +146,7 @@ export default function SettingsPage({ setActiveTab }) {
       return;
     }
 
-    // 4. Prevent reuse of current password
-    if (securityForm.newPassword === securityForm.currentPassword) {
-      showToast('New password cannot be the same as your current password.', 'error');
-      return;
-    }
-
-    // 5. Confirm new password validation
+    // Confirm new password validation
     if (!securityForm.confirmNewPassword) {
       showToast('Please confirm your new password.', 'error');
       return;
@@ -186,19 +157,17 @@ export default function SettingsPage({ setActiveTab }) {
       return;
     }
 
-    // 6. Update password
+    // Update password via Supabase Auth
     try {
-      if (updateAccountPassword) {
-        updateAccountPassword(securityForm.newPassword);
-      } else {
-        localStorage.setItem('cp_password', securityForm.newPassword);
-      }
+      await updatePassword(securityForm.newPassword);
       setSecurityForm({ currentPassword: '', newPassword: '', confirmNewPassword: '' });
-      showToast('Password updated successfully.', 'success');
+      showToast('Password updated successfully via Supabase Auth.', 'success');
     } catch (err) {
-      showToast('Unable to update password. Please verify your current password.', 'error');
+      showToast(err.message || 'Unable to update password.', 'error');
     }
   };
+
+
 
   // -------------------------------------------------------------
   // 3. Notifications State
@@ -779,7 +748,7 @@ export default function SettingsPage({ setActiveTab }) {
                   <span>Theme & Display</span>
                 </h2>
                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
-                  Customize the appearance of CareerPilot AI. Previews are applied in real time.
+                  Customize the appearance of CareerPilot. Previews are applied in real time.
                 </p>
               </div>
 
