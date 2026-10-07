@@ -6,8 +6,11 @@ import { persistentJobStore, persistentBannerStore, persistentCompanyStore } fro
 
 const router = express.Router();
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://mziglrjymkuebzdrgayp.supabase.co';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_b8Wr6uPqsPLvdJQS7rpTSg_MlZeKXxN';
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_PUBLISHABLE_KEY
+  || process.env.SUPABASE_ANON_KEY
+  || process.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  || process.env.VITE_SUPABASE_ANON_KEY;
 
 function getScopedClient(req) {
   const authHeader = req.headers.authorization;
@@ -66,7 +69,7 @@ router.put('/admin/projects/:id', authenticateUser, requireAdmin, async (req, re
   try {
     const { id } = req.params;
     const { title, description, category, difficulty, skills, github_template_url } = req.body;
-    
+
     const { data: project, error } = await supabaseAdmin
       .from('projects')
       .update({
@@ -280,7 +283,7 @@ router.post('/admin/companies', authenticateUser, requireAdmin, async (req, res)
       if (dbComp) {
         company = { ...compRecord, ...dbComp };
       }
-    } catch (e1) {}
+    } catch (e1) { }
 
     // 2. Fallback to supabaseAdmin if scopedClient failed
     if (!company) {
@@ -299,7 +302,7 @@ router.post('/admin/companies', authenticateUser, requireAdmin, async (req, res)
         if (dbAdminComp) {
           company = { ...compRecord, ...dbAdminComp };
         }
-      } catch (e2) {}
+      } catch (e2) { }
     }
 
     // 3. Always persist to disk store so company is permanently saved and available
@@ -438,7 +441,7 @@ router.post('/admin/internships', authenticateUser, requireAdmin, async (req, re
       // Wait, original schema doesn't have company_id! We must resolve company_name from company_id
       const { data: comp } = await supabaseAdmin.from('companies').select('name').eq('id', company_id).maybeSingle();
       const company_name = comp ? comp.name : 'Unknown Company';
-      
+
       const fallbackResult = await supabaseAdmin
         .from('internships')
         .insert({
@@ -453,7 +456,7 @@ router.post('/admin/internships', authenticateUser, requireAdmin, async (req, re
         })
         .select('*')
         .single();
-        
+
       internship = fallbackResult.data;
       error = fallbackResult.error;
     }
@@ -507,7 +510,7 @@ router.put('/admin/internships/:id', authenticateUser, requireAdmin, async (req,
       console.warn('[Internships API] Falling back to minimal schema due to:', error.message);
       const { data: comp } = await supabaseAdmin.from('companies').select('name').eq('id', company_id).maybeSingle();
       const company_name = comp ? comp.name : 'Unknown Company';
-      
+
       const fallbackResult = await supabaseAdmin
         .from('internships')
         .update({
@@ -523,7 +526,7 @@ router.put('/admin/internships/:id', authenticateUser, requireAdmin, async (req,
         .eq('id', id)
         .select('*')
         .single();
-        
+
       internship = fallbackResult.data;
       error = fallbackResult.error;
     }
@@ -748,7 +751,7 @@ router.put('/admin/jobs/:id', authenticateUser, requireAdmin, async (req, res) =
         .eq('id', id)
         .select('*')
         .single();
-      
+
       job = fallbackResult.data;
       error = fallbackResult.error;
     }
@@ -1052,11 +1055,11 @@ router.get('/resources', async (req, res) => {
       .select('*')
       .order('category', { ascending: true });
     if (error) return res.status(400).json({ success: false, message: error.message });
-    
+
     // Process resources to ensure URLs for Premium & Expert are protected by default on public route
     const safeResources = (resources || []).map(r => {
       let parsedMeta = {};
-      try { if (r.description && r.description.startsWith('{')) parsedMeta = JSON.parse(r.description); } catch(e){}
+      try { if (r.description && r.description.startsWith('{')) parsedMeta = JSON.parse(r.description); } catch (e) { }
       const level = r.access_level || parsedMeta.access_level || 'Standard';
       const descText = parsedMeta.desc !== undefined ? parsedMeta.desc : r.description || '';
       const resourceType = parsedMeta.type || (r.url && (r.url.includes('youtube') || r.url.includes('youtu.be')) ? 'youtube' : 'notes');

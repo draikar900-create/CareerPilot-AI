@@ -14,7 +14,7 @@ if (fs.existsSync(testEnvPath)) {
 }
 
 const supabaseUrl = process.env.SUPABASE_URL;
-const supabaseAnonKey = process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_b8Wr6uPqsPLvdJQS7rpTSg_MlZeKXxN';
+const supabaseAnonKey = process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY;
 const API_BASE = 'http://localhost:5000/api';
 
 // Create real client (same client used by frontend)

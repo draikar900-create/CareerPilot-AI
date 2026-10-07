@@ -16,7 +16,7 @@ if (!supabaseUrl || !supabaseServiceRoleKey) {
   process.exit(1);
 }
 
-const supabaseAnon = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_b8Wr6uPqsPLvdJQS7rpTSg_MlZeKXxN');
+const supabaseAnon = createClient(supabaseUrl, process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY);
 
 let dbClient = createClient(supabaseUrl, supabaseServiceRoleKey, {
   auth: { autoRefreshToken: false, persistSession: false }
@@ -532,7 +532,7 @@ export async function seedQuestions() {
     });
 
     if (!authErr && authData?.session?.access_token) {
-      dbClient = createClient(supabaseUrl, process.env.SUPABASE_ANON_KEY || 'sb_publishable_b8Wr6uPqsPLvdJQS7rpTSg_MlZeKXxN', {
+      dbClient = createClient(supabaseUrl, process.env.SUPABASE_PUBLISHABLE_KEY || process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_PUBLISHABLE_KEY || process.env.VITE_SUPABASE_ANON_KEY, {
         global: { headers: { Authorization: `Bearer ${authData.session.access_token}` } }
       });
       console.log('  ✅ Authenticated as Admin user for seeding.');

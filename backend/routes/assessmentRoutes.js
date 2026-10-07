@@ -5,8 +5,11 @@ import { authenticateUser } from '../middleware/authMiddleware.js';
 
 const router = express.Router();
 
-const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL || 'https://mziglrjymkuebzdrgayp.supabase.co';
-const supabaseAnonKey = process.env.SUPABASE_ANON_KEY || process.env.VITE_SUPABASE_ANON_KEY || 'sb_publishable_b8Wr6uPqsPLvdJQS7rpTSg_MlZeKXxN';
+const supabaseUrl = process.env.SUPABASE_URL || process.env.VITE_SUPABASE_URL;
+const supabaseAnonKey = process.env.SUPABASE_PUBLISHABLE_KEY
+  || process.env.SUPABASE_ANON_KEY
+  || process.env.VITE_SUPABASE_PUBLISHABLE_KEY
+  || process.env.VITE_SUPABASE_ANON_KEY;
 
 function getScopedClient(req) {
   const authHeader = req.headers.authorization;

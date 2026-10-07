@@ -132,7 +132,7 @@
     "email_verified": true,
     "intro_seen": true,
     "role": "Student",
-    "resume_url": "https://mziglrjymkuebzdrgayp.supabase.co/storage/v1/object/public/resumes/sample_student_resume.pdf",
+    "resume_url": null,
     "onboarding_completed": true,
     "current_onboarding_step": 8,
     "gender": "",
